@@ -1,1570 +1,1579 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Offline Mafia - Secure Sync System</title> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Offline Mafia - Secure Sync System</title> 
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-    <style>
-        body {
-            font-family: 'Malgun Gothic', sans-serif;
-            background-color: #1e1e2e;
-            color: #cdd6f4;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+<style>
+body {
+font-family: 'Malgun Gothic', sans-serif;
+background-color: #1e1e2e;
+color: #cdd6f4;
+padding: 0;
+margin: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+min-height: 100vh;
+-webkit-user-select: none;
+user-select: none;
+}
 
-        /* 사회자 인증 화면 스타일 */
-        #master-lock-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100vw;
-            background: #0f0f14;
-            position: fixed;
-            top: 0; left: 0; z-index: 9999;
-        }
+/* 사회자 인증 화면 스타일 */
+#master-lock-screen {
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+height: 100vh;
+width: 100vw;
+background: #0f0f14;
+position: fixed;
+top: 0; left: 0; z-index: 9999;
+}
 
-        #main-screen {
-            display: none; 
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100%;
-            background: radial-gradient(circle, #2b2a3a 0%, #0f0f14 100%);
-        }
-        .title-container { text-align: center; margin-bottom: 30px; z-index: 2; }
-        .title-text { font-size: 55px; font-weight: 900; color: #ff5555; text-transform: uppercase; letter-spacing: 6px; margin: 0; text-shadow: 0 0 25px rgba(255,85,85,0.7); }
-        @media (max-width: 768px) { .title-text { font-size: 40px; } }
-        .subtitle { font-size: 17px; color: #a6adc8; letter-spacing: 3px; margin-top: 12px; font-weight: bold; }
-        
-        .mafia-silhouette-box {
-            width: 220px;
-            height: 220px;
-            margin-bottom: 25px;
-            filter: drop-shadow(0 0 15px rgba(255, 85, 85, 0.5));
-        }
+#main-screen {
+display: none; 
+flex-direction: column;
+justify-content: center;
+align-items: center;
+height: 100vh;
+width: 100%;
+background: radial-gradient(circle, #2b2a3a 0%, #0f0f14 100%);
+}
+.title-container { text-align: center; margin-bottom: 30px; z-index: 2; }
+.title-text { font-size: 55px; font-weight: 900; color: #ff5555; text-transform: uppercase; letter-spacing: 6px; margin: 0; text-shadow: 0 0 25px rgba(255,85,85,0.7); }
+@media (max-width: 768px) { .title-text { font-size: 40px; } }
+.subtitle { font-size: 17px; color: #a6adc8; letter-spacing: 3px; margin-top: 12px; font-weight: bold; }
 
-        .start-btn {
-            padding: 16px 60px; font-size: 24px; font-weight: bold; background-color: #ff5555; color: #11111b; 
-            border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(255,85,85,0.4); z-index: 2; letter-spacing: 4px;
-        }
-        .start-btn:hover { background-color: #ff8888; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(255,85,85,0.6); }
+.mafia-silhouette-box {
+width: 220px;
+height: 220px;
+margin-bottom: 25px;
+filter: drop-shadow(0 0 15px rgba(255, 85, 85, 0.5));
+}
 
-        #game-workspace {
-            display: none; width: 100%; max-width: 1400px; padding: 20px; box-sizing: border-box;
-            flex-direction: column; align-items: center;
-        }
+.start-btn {
+padding: 16px 60px; font-size: 24px; font-weight: bold; background-color: #ff5555; color: #11111b; 
+border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s;
+box-shadow: 0 5px 20px rgba(255,85,85,0.4); z-index: 2; letter-spacing: 4px;
+}
+.start-btn:hover { background-color: #ff8888; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(255,85,85,0.6); }
 
-        .workspace-header {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: linear-gradient(90deg, #181825 0%, #252538 100%);
-            padding: 14px 24px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #313244;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            box-sizing: border-box;
-        }
-        .workspace-title-box {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .workspace-title {
-            font-size: 24px;
-            font-weight: 900;
-            color: #ff5555;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin: 0;
-            text-shadow: 0 0 12px rgba(255,85,85,0.3);
-        }
-        .workspace-subtitle {
-            font-size: 13px;
-            color: #a6adc8;
-            font-weight: normal;
-            border-left: 1px solid #45475a;
-            padding-left: 12px;
-            margin-left: 4px;
-        }
-        .workspace-btn-zone {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .workspace-badge {
-            background-color: rgba(255, 85, 85, 0.1);
-            color: #ff5555;
-            border: 1px solid #ff5555;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .btn-absolute-reset {
-            background-color: #f38ba8;
-            color: #11111b;
-            font-size: 12px;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(243,139,168,0.3);
-        }
-        .btn-absolute-reset:hover { background-color: #ff9ab3; }
-        
-        .main-container { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 15px; width: 100%; }
-        @media (max-width: 1100px) { .main-container { flex-direction: column; align-items: center; } }
+#game-workspace {
+display: none; width: 100%; max-width: 1400px; padding: 20px; box-sizing: border-box;
+flex-direction: column; align-items: center;
+}
 
-        .timeline-panel {
-            display: flex; flex-direction: column; width: 125px; background-color: #181825; 
-            padding: 12px; border-radius: 8px; border: 1px solid #45475a; align-self: stretch;
-            max-height: 550px; overflow-y: auto; box-sizing: border-box;
-        }
-        .timeline-title { font-size: 12px; font-weight: bold; color: #f9e2af; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #313244; padding-bottom: 6px; }
-        .timeline-btn { width: 100%; padding: 8px 4px; font-size: 11px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; margin-bottom: 6px; transition: all 0.2s; text-align: center; }
+.workspace-header {
+width: 100%;
+display: flex;
+align-items: center;
+justify-content: space-between;
+background: linear-gradient(90deg, #181825 0%, #252538 100%);
+padding: 14px 24px;
+border-radius: 10px;
+margin-bottom: 20px;
+border: 1px solid #313244;
+box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+box-sizing: border-box;
+}
+.workspace-title-box {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.workspace-title {
+font-size: 24px;
+font-weight: 900;
+color: #ff5555;
+text-transform: uppercase;
+letter-spacing: 2px;
+margin: 0;
+text-shadow: 0 0 12px rgba(255,85,85,0.3);
+}
+.workspace-subtitle {
+font-size: 13px;
+color: #a6adc8;
+font-weight: normal;
+border-left: 1px solid #45475a;
+padding-left: 12px;
+margin-left: 4px;
+}
+.workspace-btn-zone {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.workspace-badge {
+background-color: rgba(255, 85, 85, 0.1);
+color: #ff5555;
+border: 1px solid #ff5555;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 11px;
+font-weight: bold;
+letter-spacing: 1px;
+}
+.btn-absolute-reset {
+background-color: #f38ba8;
+color: #11111b;
+font-size: 12px;
+padding: 5px 12px;
+border-radius: 6px;
+font-weight: bold;
+border: none;
+cursor: pointer;
+box-shadow: 0 2px 8px rgba(243,139,168,0.3);
+}
+.btn-absolute-reset:hover { background-color: #ff9ab3; }
 
-        .left-panel { flex: 0 0 auto; }
-        
-        #table-container {
-            position: relative; width: 550px; height: 550px; border-radius: 50%; border: 2px dashed #45475a;
-            background-color: #181825; transition: background-color 0.5s; overflow: visible;
-            touch-action: none; 
-        }
-        #table-container.night-theme { background-color: #09090d; border-color: #313244; }
-        
-        #center-display {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #6c7086; font-weight: bold; font-size: 18px; text-align: center; line-height: 1.4; pointer-events: none; z-index: 1;
-        }
+.main-container { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 15px; width: 100%; }
+@media (max-width: 1100px) { .main-container { flex-direction: column; align-items: center; } }
 
-        #arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-        .skill-arrow { pointer-events: auto; cursor: pointer; transition: stroke-width 0.2s; }
-        .skill-arrow:hover { stroke-width: 6; filter: drop-shadow(0 0 6px #ffffff); }
+.timeline-panel {
+display: flex; flex-direction: column; width: 125px; background-color: #181825; 
+padding: 12px; border-radius: 8px; border: 1px solid #45475a; align-self: stretch;
+max-height: 550px; overflow-y: auto; box-sizing: border-box;
+}
+.timeline-title { font-size: 12px; font-weight: bold; color: #f9e2af; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #313244; padding-bottom: 6px; }
+.timeline-btn { width: 100%; padding: 8px 4px; font-size: 11px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; margin-bottom: 6px; transition: all 0.2s; text-align: center; }
 
-        #seats-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+.left-panel { flex: 0 0 auto; }
 
-        .player-seat {
-            position: absolute; width: 64px; height: 64px; background-color: #313244; border: 2px solid #a6adc8; border-radius: 50%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; text-align: center;
-            transform: translate(-50%, -50%); box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer; 
-            transition: box-shadow 0.2s, border 0.2s, opacity 0.3s; pointer-events: auto; 
-            touch-action: none; line-height: 1.1; 
-        }
-        .player-seat strong { font-size: 11px; margin: 0; padding: 0; }
-        .player-seat span { font-size: 9px; margin: 0; padding: 0; }
-        
-        .player-seat.selected { border: 3px solid #ffffff !important; box-shadow: 0 0 15px #ffffff; }
-        .player-seat.target-selected { border: 3px dashed #f9e2af !important; box-shadow: 0 0 15px #f9e2af; }
-        
-        .mafia-color { border-color: #ff5555; color: #ff5555; }
-        .citizen-color { border-color: #5599ff; color: #5599ff; }
-        .neutral-color { border-color: #50fa7b; color: #50fa7b; }
+#table-container {
+position: relative; width: 550px; height: 550px; border-radius: 50%; border: 2px dashed #45475a;
+background-color: #181825; transition: background-color 0.5s; overflow: visible;
+touch-action: none; 
+}
+#table-container.night-theme { background-color: #09090d; border-color: #313244; }
 
-        .player-seat.dead { background-color: #11111b !important; border-color: #45475a !important; box-shadow: none !important; opacity: 0.4; }
-        .player-seat.dead strong { text-decoration: line-through; color: #6c7086; }
-        .player-seat.dead span { color: #6c7086 !important; }
+#center-display {
+position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+color: #6c7086; font-weight: bold; font-size: 18px; text-align: center; line-height: 1.4; pointer-events: none; z-index: 1;
+}
 
-        .btn-info, .btn-move {
-            position: absolute; width: 22px; height: 22px; border-radius: 50%; background-color: #45475a; color: #cdd6f4;
-            font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.6); border: 1px solid #a6adc8; pointer-events: auto;
-            top: 50%; transform: translateY(-50%); 
-        }
-        .btn-info { left: -26px; cursor: pointer; }
-        .btn-info:hover { background-color: #89b4fa; color: #11111b; }
-        .btn-move { right: -26px; cursor: grab; touch-action: none; }
-        .btn-move:active { cursor: grabbing; background-color: #f9e2af; color: #11111b; }
+#arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.skill-arrow { pointer-events: auto; cursor: pointer; transition: stroke-width 0.2s; }
+.skill-arrow:hover { stroke-width: 6; filter: drop-shadow(0 0 6px #ffffff); }
 
-        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 480px; width: 100%; }
-        .controls, #lobby-panel, #role-picker-panel, #play-dashboard-panel, #log-wrapper { background-color: #181825; padding: 15px; border-radius: 8px; }
-        
-        #log-wrapper { display: flex; gap: 15px; width: 100%; box-sizing: border-box; }
-        #status-container { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; max-height: 220px; min-height: 160px; }
-        #action-log-container { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; max-height: 220px; min-height: 160px; border-left: 1px solid #45475a; padding-left: 15px; }
+#seats-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
-        input[type="number"], input[type="password"] { padding: 10px; font-size: 18px; border-radius: 5px; border: none; background-color: #313244; color: #cdd6f4; text-align: center; }
-        input[type="number"] { width: 80px; }
-        button { padding: 10px 18px; font-size: 14px; background-color: #89b4fa; color: #11111b; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.8; }
-        button:disabled { background-color: #45475a; color: #6c7086; cursor: not-allowed; }
-        
-        .btn-complete { background-color: #a6e3a1; color: #11111b; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
-        .btn-night-action { background-color: #f9e2af; color: #11111b; width: 100%; padding: 12px; font-size: 15px; }
-        .btn-phase-toggle { background-color: #f38ba8; color: #11111b; width: 100%; font-size: 15px; padding: 12px; margin-top: 10px; }
+.player-seat {
+position: absolute; width: 64px; height: 64px; background-color: #313244; border: 2px solid #a6adc8; border-radius: 50%;
+display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; text-align: center;
+transform: translate(-50%, -50%); box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer; 
+transition: box-shadow 0.2s, border 0.2s, opacity 0.3s; pointer-events: auto; 
+touch-action: none; line-height: 1.1; 
+}
+.player-seat strong { font-size: 11px; margin: 0; padding: 0; }
+.player-seat span { font-size: 9px; margin: 0; padding: 0; }
 
-        .selected-info { background-color: #313244; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; font-size: 14px; border-left: 4px solid #89b4fa; }
-        .faction-section { margin-bottom: 12px; }
-        .faction-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-        .role-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
-        .role-btn { padding: 6px 10px; font-size: 12px; border: 1px solid #45475a; border-radius: 4px; background-color: #1e1e2e; color: #cdd6f4; cursor: pointer; }
-        .role-btn:hover { background-color: #45475a; }
+.player-seat.selected { border: 3px solid #ffffff !important; box-shadow: 0 0 15px #ffffff; }
+.player-seat.target-selected { border: 3px dashed #f9e2af !important; box-shadow: 0 0 15px #f9e2af; }
 
-        .skill-box { background-color: #313244; padding: 10px; border-radius: 6px; margin-top: 8px; }
-        .night-log-entry { color: #f9e2af; border-left: 2px solid #f9e2af; padding-left: 5px; margin: 4px 0; font-size: 12px; line-height: 1.4; }
+.mafia-color { border-color: #ff5555; color: #ff5555; }
+.citizen-color { border-color: #5599ff; color: #5599ff; }
+.neutral-color { border-color: #50fa7b; color: #50fa7b; }
 
-        #lobby-panel { text-align: center; border: 2px solid #a6adc8; }
-        .qr-placeholder { width: 140px; height: 140px; background-color: white; padding: 10px; border-radius: 8px; margin: 10px auto; }
-        .qr-placeholder img { width: 100%; height: 100%; }
-        .player-list-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; }
-        .joined-player { background-color: #313244; padding: 6px; border-radius: 4px; font-size: 12px; color: #a6e3a1; font-weight: bold; }
-        .waiting-player { background-color: #1e1e2e; padding: 6px; border-radius: 4px; font-size: 12px; color: #6c7086; border: 1px dashed #45475a; }
+.player-seat.dead { background-color: #11111b !important; border-color: #45475a !important; box-shadow: none !important; opacity: 0.4; }
+.player-seat.dead strong { text-decoration: line-through; color: #6c7086; }
+.player-seat.dead span { color: #6c7086 !important; }
 
-        #info-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background-color: #0c0c10; z-index: 2000; justify-content: center; align-items: center;
-        }
-        #alert-modal, #confirm-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2001; justify-content: center; align-items: center;
-        }
-        .modal-content { background-color: #1e1e2e; border: 2px solid #89b4fa; border-radius: 12px; padding: 25px; max-width: 420px; width: 85%; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #f38ba8; cursor: pointer; font-weight: bold; }
-        #modal-role-name { font-size: 20px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; }
-        #modal-role-desc { font-size: 14px; color: #a6adc8; line-height: 1.6; text-align: left; background-color: #11111b; padding: 15px; border-radius: 8px; border: 1px solid #313244; white-space: pre-line; }
+.btn-info, .btn-move {
+position: absolute; width: 22px; height: 22px; border-radius: 50%; background-color: #45475a; color: #cdd6f4;
+font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;
+box-shadow: 0 2px 4px rgba(0,0,0,0.6); border: 1px solid #a6adc8; pointer-events: auto;
+top: 50%; transform: translateY(-50%); 
+}
+.btn-info { left: -26px; cursor: pointer; }
+.btn-info:hover { background-color: #89b4fa; color: #11111b; }
+.btn-move { right: -26px; cursor: grab; touch-action: none; }
+.btn-move:active { cursor: grabbing; background-color: #f9e2af; color: #11111b; }
 
-        .vote-btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-vote-start { flex: 1; background-color: #cba6f7; color: #11111b; padding: 12px; font-size: 14px; }
-        .timer-display { font-size: 24px; color: #f38ba8; font-weight: bold; text-align: center; margin: 10px 0; display: none; } 
+.right-panel { flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 480px; width: 100%; }
+.controls, #lobby-panel, #role-picker-panel, #play-dashboard-panel, #log-wrapper { background-color: #181825; padding: 15px; border-radius: 8px; }
 
-        #smartphone-simulator {
-            position: fixed; right: 20px; bottom: 20px; width: 320px; height: 500px;
-            background-color: #11111b; border: 4px solid #45475a; border-radius: 20px;
-            display: none; flex-direction: column; z-index: 999; box-shadow: -5px 5px 20px rgba(0,0,0,0.8);
-            overflow: hidden;
-        }
-        .phone-header { background-color: #313244; padding: 10px; text-align: center; font-weight: bold; color: #a6e3a1; font-size: 14px; display: flex; justify-content: space-between; align-items: center;}
-        .phone-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .phone-role-btn { background-color: #89b4fa; color: #11111b; padding: 5px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; }
-        .phone-player-list { display: flex; flex-direction: column; gap: 8px; }
-        .phone-player-item { background-color: #1e1e2e; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #45475a; }
-        .phone-player-item.dead { opacity: 0.5; text-decoration: line-through; color: #f38ba8; }
-        .phone-vote-btn { background-color: #f38ba8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: none; }
-        .phone-judge-btn { padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; flex: 1; }
-        
-        .simulator-selector-box { background-color: #181825; padding: 8px; border-radius: 6px; margin-top: 5px; display: flex; gap: 5px; align-items: center; font-size: 12px; }
-        .swindler-btn { background-color: #f9e2af; color: #11111b; padding: 8px; font-size: 13px; font-weight: bold; border: 1px solid #45475a; border-radius: 6px; cursor: pointer; text-align: center; transition: background 0.2s; }
-        .swindler-btn:hover { background-color: #fbe3b5; }
-    </style>
+#log-wrapper { display: flex; gap: 15px; width: 100%; box-sizing: border-box; }
+#status-container { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; max-height: 220px; min-height: 160px; }
+#action-log-container { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; max-height: 220px; min-height: 160px; border-left: 1px solid #45475a; padding-left: 15px; }
+
+input[type="number"], input[type="password"] { padding: 10px; font-size: 18px; border-radius: 5px; border: none; background-color: #313244; color: #cdd6f4; text-align: center; }
+input[type="number"] { width: 80px; }
+button { padding: 10px 18px; font-size: 14px; background-color: #89b4fa; color: #11111b; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+button:hover { opacity: 0.8; }
+button:disabled { background-color: #45475a; color: #6c7086; cursor: not-allowed; }
+
+.btn-complete { background-color: #a6e3a1; color: #11111b; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
+.btn-night-action { background-color: #f9e2af; color: #11111b; width: 100%; padding: 12px; font-size: 15px; }
+.btn-phase-toggle { background-color: #f38ba8; color: #11111b; width: 100%; font-size: 15px; padding: 12px; margin-top: 10px; }
+
+.selected-info { background-color: #313244; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; font-size: 14px; border-left: 4px solid #89b4fa; }
+.faction-section { margin-bottom: 12px; }
+.faction-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+.role-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.role-btn { padding: 6px 10px; font-size: 12px; border: 1px solid #45475a; border-radius: 4px; background-color: #1e1e2e; color: #cdd6f4; cursor: pointer; }
+.role-btn:hover { background-color: #45475a; }
+
+.skill-box { background-color: #313244; padding: 10px; border-radius: 6px; margin-top: 8px; }
+.night-log-entry { color: #f9e2af; border-left: 2px solid #f9e2af; padding-left: 5px; margin: 4px 0; font-size: 12px; line-height: 1.4; }
+
+#lobby-panel { text-align: center; border: 2px solid #a6adc8; }
+.qr-placeholder { width: 140px; height: 140px; background-color: white; padding: 10px; border-radius: 8px; margin: 10px auto; }
+.qr-placeholder img { width: 100%; height: 100%; }
+.player-list-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; }
+.joined-player { background-color: #313244; padding: 6px; border-radius: 4px; font-size: 12px; color: #a6e3a1; font-weight: bold; }
+.waiting-player { background-color: #1e1e2e; padding: 6px; border-radius: 4px; font-size: 12px; color: #6c7086; border: 1px dashed #45475a; }
+
+#info-modal {
+display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+background-color: #0c0c10; z-index: 2000; justify-content: center; align-items: center;
+}
+#alert-modal, #confirm-modal {
+display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2001; justify-content: center; align-items: center;
+}
+.modal-content { background-color: #1e1e2e; border: 2px solid #89b4fa; border-radius: 12px; padding: 25px; max-width: 420px; width: 85%; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.modal-close { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #f38ba8; cursor: pointer; font-weight: bold; }
+#modal-role-name { font-size: 20px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; }
+#modal-role-desc { font-size: 14px; color: #a6adc8; line-height: 1.6; text-align: left; background-color: #11111b; padding: 15px; border-radius: 8px; border: 1px solid #313244; white-space: pre-line; }
+
+.vote-btn-group { display: flex; gap: 10px; margin-top: 10px; }
+.btn-vote-start { flex: 1; background-color: #cba6f7; color: #11111b; padding: 12px; font-size: 14px; }
+.timer-display { font-size: 24px; color: #f38ba8; font-weight: bold; text-align: center; margin: 10px 0; display: none; } 
+
+#smartphone-simulator {
+position: fixed; right: 20px; bottom: 20px; width: 320px; height: 500px;
+background-color: #11111b; border: 4px solid #45475a; border-radius: 20px;
+display: none; flex-direction: column; z-index: 999; box-shadow: -5px 5px 20px rgba(0,0,0,0.8);
+overflow: hidden;
+}
+.phone-header { background-color: #313244; padding: 10px; text-align: center; font-weight: bold; color: #a6e3a1; font-size: 14px; display: flex; justify-content: space-between; align-items: center;}
+.phone-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.phone-role-btn { background-color: #89b4fa; color: #11111b; padding: 5px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; border: none; cursor: pointer; }
+.phone-player-list { display: flex; flex-direction: column; gap: 8px; }
+.phone-player-item { background-color: #1e1e2e; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #45475a; }
+.phone-player-item.dead { opacity: 0.5; text-decoration: line-through; color: #f38ba8; }
+.phone-vote-btn { background-color: #f38ba8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: none; }
+.phone-judge-btn { padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; flex: 1; }
+
+.simulator-selector-box { background-color: #181825; padding: 8px; border-radius: 6px; margin-top: 5px; display: flex; gap: 5px; align-items: center; font-size: 12px; }
+.swindler-btn { background-color: #f9e2af; color: #11111b; padding: 8px; font-size: 13px; font-weight: bold; border: 1px solid #45475a; border-radius: 6px; cursor: pointer; text-align: center; transition: background 0.2s; }
+.swindler-btn:hover { background-color: #fbe3b5; }
+</style>
 </head>
 <body>
 
-    <div id="master-lock-screen" style="display: flex;">
-        <h2 style="color: #ff5555; font-size: 28px; margin-bottom: 5px; font-weight: 900; letter-spacing: 2px;">⚠️ CONTROL ACCESS DENIED</h2>
-        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 25px; text-align: center;">이 화면은 오직 개설자(사회자) 본인만 진입할 수 있습니다.</p>
-        <input type="password" id="master-password-input" placeholder="사회자 보안 인증키 입력" style="padding: 14px; font-size: 16px; width: 80%; max-width: 280px; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px;">
-        <button onclick="checkMasterAuth()" style="background-color: #ff5555; color: #11111b; padding: 12px 50px; font-size: 16px;">대시보드 잠금 해제</button>
-    </div>
-
-    <div id="player-join-screen" style="display: none; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: radial-gradient(circle, #2b2a3a 0%, #0f0f14 100%); color: #cdd6f4;">
-        <h2 style="color: #a6e3a1; font-size: 32px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px;">🎮 게임 참가하기</h2>
-        <p id="player-join-status" style="font-size: 15px; color: #a6adc8; margin-bottom: 25px; text-align: center; padding: 0 20px;">사회자가 대기실을 열 때까지 기다려 주세요.</p>
-        <input type="text" id="player-nickname" placeholder="사용할 닉네임 입력" style="padding: 14px; font-size: 18px; border-radius: 8px; border: none; background-color: #313244; color: #cdd6f4; text-align: center; margin-bottom: 20px; width: 80%; max-width: 280px; font-weight: bold;">
-        <button id="player-join-btn" onclick="submitPlayerJoin()" style="background-color: #a6e3a1; color: #11111b; padding: 14px 60px; font-size: 18px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(166,227,161,0.3);">방 입장하기</button>
-    </div>
-
-    <div id="main-screen" style="display: none;">
-        <svg class="mafia-silhouette-box" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>
-            <path d="M 18 48 Q 50 43 82 48 L 85 53 Q 50 49 15 53 Z" fill="#ff5555"/>
-            <path d="M 28 48 C 28 24, 72 24, 72 48 Z" fill="#1e1e2e" stroke="#ff5555" stroke-width="2.5"/>
-            <rect x="29" y="45" width="42" height="3" fill="#ff5555"/>
-            <path d="M 33 68 L 50 88 L 67 68 L 59 60 L 41 60 Z" fill="#ff5555" opacity="0.15"/>
-            <path d="M 46 62 L 54 62 L 52 80 L 50 84 L 48 80 Z" fill="#ff5555"/>
-        </svg>
-
-        <div class="title-container">
-            <h1 class="title-text">Offline Mafia</h1>
-            <div class="subtitle">사회자 전용 실시간 중계 마스터 대시보드</div>
-        </div>
-        <button class="start-btn" onclick="enterSetup()">입장</button>
-    </div>
-
-    <div id="game-workspace">
-        <div class="workspace-header">
-            <div class="workspace-title-box">
-                <h2 class="workspace-title">🎬 Play Master Dashboard</h2>
-                <span class="workspace-subtitle">오프라인 마피아 실시간 중앙 관제 시스템</span>
-            </div>
-            <div class="workspace-btn-zone">
-                <button class="btn-absolute-reset" onclick="triggerAbsoluteReset()">🚨 서버 전체 초기화 (처음으로)</button>
-                <span class="workspace-badge">LIVE SYNC ACTIVE</span>
-            </div>
-        </div>
-        
-        <div class="main-container">
-            <div class="timeline-panel" id="master-timeline-box" style="display: none;">
-                <div class="timeline-title">⏳ 타임라인</div>
-                <button class="timeline-btn" id="btn-timeline-reset" onclick="triggerGameReset()" style="background-color: #f38ba8; color: #11111b; margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.1);">🔄 직업단계 재설정</button>
-                <button class="timeline-btn" id="btn-timeline-current" onclick="switchTimelineView('CURRENT')" style="background-color: #89b4fa; color: #11111b;">[현재]</button>
-                <div id="timeline-nights-container" style="display: flex; flex-direction: column; width: 100%;"></div>
-            </div>
-
-            <div class="left-panel">
-                <div id="table-container">
-                    <div id="center-display">원형 테이블<br><span style="font-size:13px; font-weight:normal;">우측에서 설정을 진행하세요</span></div>
-                    <svg id="arrow-canvas">
-                        <defs>
-                            <marker id="arrow-mafia" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
-                                <path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#ff5555" />
-                            </marker>
-                            <marker id="arrow-citizen" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
-                                <path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#5599ff" />
-                            </marker>
-                            <marker id="arrow-neutral" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
-                                <path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#50fa7b" />
-                            </marker>
-                            <marker id="arrow-vote" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
-                                <path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#cba6f7" />
-                            </marker>
-                        </defs>
-                        <g id="arrow-layer"></g>
-                    </svg>
-                    <div id="seats-layer"></div>
-                </div>
-            </div>
-
-            <div class="right-panel">
-                <div class="controls" id="setup-controls">
-                    <h3 style="color: #ff5555; margin-top: 0;">🎲 초기 게임 인원 설정</h3>
-                    <label for="playerCount">인원 설정 (4~30명): </label>
-                    <input type="number" id="playerCount" value="8" min="4" max="30">
-                    <button onclick="openQRLobby()" style="margin-top: 10px; width: 100%;">QR코드 생성 (대기실 오픈) ➔</button>
-                </div>
-
-                <div id="lobby-panel" style="display: none;">
-                    <h3 style="color: #a6e3a1; margin-top: 0;">스마트폰으로 접속하세요</h3>
-                    <div class="qr-placeholder">
-                        <img src="" alt="QR Code">
-                    </div>
-                    <p style="font-size: 11px; color: #a6adc8;">※ 오프라인 세션 전용 가상 테스트 버튼을 활용해 이름을 채워보세요.</p>
-                    <button onclick="simulatePlayerJoin()" style="background-color: #313244; color: #cdd6f4; width: 100%; margin-bottom: 8px;">👤 가상 플레이어 전체 접속</button>
-                    <button onclick="resetLobbyToSetup()" style="background-color: #f38ba8; color: #11111b; width: 100%; margin-bottom: 12px; font-weight: bold;">◀ 인원 설정 다시 하기 (방 초기화)</button>
-                    
-                    <div class="player-list-grid" id="lobby-player-list"></div>
-                    <button class="btn-complete" id="lobby-next-btn" onclick="finishLobby()" style="display: none;">모두 접속 완료 - 직업 설정 및 배치 ➔</button>
-                </div>
-
-                <div id="role-picker-panel" style="display: none;">
-                    <div id="selected-player-text" class="selected-info">지정할 플레이어를 클릭하세요.</div>
-                    <div class="faction-section">
-                        <div class="faction-title" style="color: #ff5555;">■ 마피아 팀</div>
-                        <div class="role-buttons" id="mafia-btns"></div>
-                    </div>
-                    <div class="faction-section">
-                        <div class="faction-title" style="color: #5599ff;">■ 시민 팀</div>
-                        <div class="role-buttons" id="citizen-btns"></div>
-                    </div>
-                    <div class="faction-section">
-                        <div class="faction-title" style="color: #50fa7b;">■ 중립 팀</div>
-                        <div class="role-buttons" id="neutral-btns"></div>
-                    </div>
-                    <button class="btn-complete" onclick="finalizeSetupAndStart()">게임 준비 완료 (플레이어 화면 동기화) ➔</button>
-                </div>
-
-                <div id="play-dashboard-panel" style="display: none;">
-                    <div class="selected-info" id="current-phase-title" style="border-left-color: #f38ba8; font-size: 16px;">상태: Setup 완료</div>
-                    
-                    <div id="timer-display" class="timer-display">⏱ 10초 남음</div> 
-
-                    <div id="night-menu-box" style="display: none;">
-                        <div style="font-size: 14px; margin-bottom: 5px; color: #f9e2af; font-weight: bold;">🌙 밤 메뉴 - 스킬 로그 기록</div>
-                        <p style="margin: 0 0 10px 0; font-size: 11px; color: #f38ba8; font-weight: bold;">
-                            ※ 잘못 그려진 스킬 화살표(선)를 클릭하면 실시간 삭제/취소가 가능합니다.
-                        </p>
-                        
-                        <div class="skill-box">
-                            <div id="skill-actor-view">시전자: 선택 대기 중</div>
-                            <div id="skill-name-view" style="font-weight: bold; color: #f5c2e7; margin: 4px 0;">보유 스킬: -</div>
-                            <div id="skill-target-view" style="margin-bottom: 8px;">스킬 대상: 선택 대기 중</div>
-                            
-                            <button class="btn-night-action" id="btn-execute-standard" onclick="executeNightSkill()">개인 스킬 실행 및 기록</button>
-                            
-                            <div id="swindler-master-zone" style="display:none; border: 1px dashed #f9e2af; padding:10px; margin-top:8px; border-radius:4px; background:#11111b; text-align:center;">
-                                <div style="font-size:12px; color:#f9e2af; font-weight:bold;">🎭 사기꾼 스킬 활성화 상태</div>
-                                <div style="font-size:11px; color:#a6adc8; margin-top:4px;">[개인 스킬 실행] 버튼을 누르면 해당 사기꾼 플레이어 스마트폰 시뮬레이터 창에 5대 직업 선택 창이 연격 표출됩니다.</div>
-                            </div>
-                        </div>
-                        <div style="border: 1px dashed #ff5555; padding: 10px; border-radius: 6px; margin-top: 10px; background-color: #11111b;">
-                            <div style="font-size: 13px; color: #ff5555; font-weight: bold;">🔫 마피아 합의 사격</div>
-                            <button style="background-color: #ff5555; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px;" onclick="executeMafiaConsensus()">생존 마피아 전원 합의 사격으로 기록</button>
-                        </div>
-                    </div>
-
-                    <div id="day-menu-box" style="display: none;">
-                        <div style="font-size: 14px; color: #89b4fa; font-weight: bold;">☀️ 낮 메뉴 (재판 및 투표)</div>
-                        <p style="margin: 5px 0; font-size: 12px; color: #a6adc8;">※ 좌석 클릭 시 생존/사망 즉시 토글 반영 (참가자 화면 동기화)</p>
-                        
-                        <div class="vote-btn-group">
-                            <button class="btn-vote-start" id="btn-vote-1" onclick="startVotePhase('SUSPECT')">1차 투표 시작<br>(마피아 지목)</button>
-                            <button class="btn-vote-start" id="btn-vote-2" onclick="startVotePhase('JUDGMENT')" style="background-color: #f38ba8; color: white;" disabled>2차 투표 시작<br>(최후의 찬반)</button>
-                        </div>
-                    </div>
-
-                    <button class="btn-phase-toggle" id="phase-toggle-btn" onclick="toggleGamePhase()">밤 단계로 전환 🌙</button>
-                    
-                    <div class="simulator-selector-box">
-                        <span style="color: #89dceb; font-weight: bold;">📱 기기 테스트 전환:</span>
-                        <select id="sim-id-selector" onchange="changeSimulatedPlayer(this.value)" style="background:#313244; color:#cdd6f4; border:none; padding:4px; border-radius:4px;"></select>
-                        <button onclick="toggleSmartphoneSimulator()" style="background-color: #89dceb; color: #11111b; padding: 4px 8px; font-size:11px;">화면 열기/닫기</button>
-                    </div>
-                </div>
-
-                <div id="log-wrapper">
-                    <div id="status-container">방을 만들고 접속을 진행해 주세요.</div>
-                    <div id="action-log-container">
-                        <strong style="color: #f5c2e7;">[🔮 실시간 스킬 및 판정 로그]</strong><br>
-                        <span style="color:#6c7086; font-size:11px;">사상자 정보 및 밤 스킬 로그가 상시 영구 노출됩니다.</span><br><br>
-                        <div id="action-log-list"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="smartphone-simulator">
-        <div class="phone-header">
-            <span id="phone-player-name">대기실 접속중...</span>
-            <button class="phone-role-btn" id="phone-role-btn" onclick="showPhoneRoleInfo()" style="display:none;">[직업정보]</button>
-        </div>
-        <div class="phone-body">
-            <div id="phone-status-msg" style="text-align: center; color: #f9e2af; font-size: 12px;">사회자의 시작을 기다리고 있습니다.</div> 
-            <div id="phone-judgment-panel" style="display: none; gap: 10px; margin-bottom: 15px;">
-                <button class="phone-judge-btn" style="background-color: #a6e3a1; color: #11111b;" onclick="castJudgmentVote('SAVE')">살린다 (찬성)</button>
-                <button class="phone-judge-btn" style="background-color: #ff5555; color: white;" onclick="castJudgmentVote('KILL')">죽인다 (반대)</button>
-            </div> 
-            <div class="phone-player-list" id="phone-player-list"></div>
-        </div>
-    </div>
-
-    <div id="info-modal">
-        <div class="modal-content" style="max-width: 440px; border-color: #cba6f7; box-shadow: 0 0 30px rgba(203,166,247,0.3);">
-            <span class="modal-close" onclick="closeInfoModal()">&times;</span>
-            <div id="modal-role-name">직업 이름</div>
-            <div id="modal-role-desc">직업 설명이 여기에 표시됩니다.</div>
-        </div>
-    </div>
-
-    <div id="alert-modal">
-        <div class="modal-content" style="border-color: #f38ba8; max-width: 400px;">
-            <div id="alert-modal-body" style="white-space: pre-line; font-size: 14px; margin-bottom: 18px; line-height: 1.6; color: #cdd6f4; text-align: left; padding: 5px;">알림 내용</div>
-            <button onclick="closeAlertModal()" style="background-color: #f38ba8; color: #11111b; padding: 8px 25px; font-weight: bold; width: 100%;">확인</button>
-        </div>
-    </div>
-
-    <div id="confirm-modal">
-        <div class="modal-content" style="border-color: #f9e2af; max-width: 400px;">
-            <div id="confirm-modal-body" style="white-space: pre-line; font-size: 14px; margin-bottom: 18px; line-height: 1.6; color: #cdd6f4; text-align: left; padding: 5px;">확인 문구</div>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button onclick="closeConfirmModal(true)" style="background-color: #a6e3a1; color: #11111b; padding: 10px 20px; flex: 1;">확인</button>
-                <button onclick="closeConfirmModal(false)" style="background-color: #45475a; color: #cdd6f4; padding: 10px 20px; flex: 1;">취소</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 🔒 [보안 설정] 사회자 비밀번호 해시값 (mafia0987)
-        const MASTER_HASH = "6ec18fede8426832e9529f0b2e4c093d056c501745873ce89698219e5b1f3072";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyClYNfv5gT-tM1NwznAEcAW7mnl-GFRANw",
-            authDomain: "offlinemafia-project.firebaseapp.com",
-            projectId: "offlinemafia-project",
-            storageBucket: "offlinemafia-project.firebasestorage.app",
-            messagingSenderId: "874702143911",
-            appId: "1:874702143911:web:ec59ecb67aeb8e859df682",
-            databaseURL: "https://offlinemafia-project-default-rtdb.firebaseio.com"
-        };
-
-        let db = null; let roomRef = null; let isFirebaseConfigured = false;
-
-        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database(); roomRef = db.ref("rooms/room123");
-            isFirebaseConfigured = true;
-        }
-
-        function customAlert(msg) {
-            document.getElementById("alert-modal-body").innerText = msg;
-            document.getElementById("alert-modal").style.display = "flex";
-        }
-        function closeAlertModal() {
-            document.getElementById("alert-modal").style.display = "none";
-        }
-
-        let confirmCallback = null;
-        function customConfirm(msg, callback) {
-            document.getElementById("confirm-modal-body").innerText = msg;
-            document.getElementById("confirm-modal").style.display = "flex";
-            confirmCallback = callback;
-        }
-        function closeConfirmModal(result) {
-            document.getElementById("confirm-modal").style.display = "none";
-            if (result && confirmCallback) confirmCallback();
-            confirmCallback = null;
-        }
-
-        const roleDataMapping = {
-            "마피아": { 
-                skill: "사격 (합의 사격)", 
-                desc: "■ 능력 : 사격 (합의 사격)\n■ 세부 규칙 :\n밤마다 마피아 팀원들과 논의하여 목표물 한 명을 조준하고 처단합니다. 생존해 있는 조직원이 여러 명인 경우, 합의 사격을 원칙으로 하여 최종 타겟을 처단하게 됩니다. 밤 공격에 방어 수단(의사 등)이 제공되지 않은 대상은 다음날 아침 사상자로 처리됩니다." 
-            },
-            "해커": { 
-                skill: "해킹 (정보 확인)", 
-                desc: "■ 능력 : 해킹 (정보 확인)\n■ 세부 규칙 :\n밤마다 지정한 플레이어의 스마트폰 신호를 우회 해킹하여, 해당 플레이어의 정확한 '고유 직업 명칭'과 '진영'을 직접 확인해 낼 수 있습니다. 단, 마피아 진영과의 직접적인 접선 통로는 제공되지 않으며, 마피아의 총격에 노출될 수 있는 위험을 안고 있습니다." 
-            },
-            "마담": { 
-                skill: "유혹 (능력 봉쇄)", 
-                desc: "■ 능력 : 유혹 (능력 봉쇄)\n■ 세부 규칙 :\n밤마다 한 명을 선택해 유혹의 덫을 놓습니다. 마담에게 지목당한 플레이어는 당일 밤에 수행하려던 모든 특수 능력(수사, 치료, 조사 등)이 강제로 차단 및 봉쇄되어 불발 처리됩니다. 밤에 마피아에게 조준당할 경우 합류 및 접선이 자동으로 성사됩니다." 
-            },
-            "사기꾼": { 
-                skill: "사기 (거짓 특종 전파)", 
-                desc: "■ 능력 : 사기 (거짓 특종 전파)\n■ 세부 규칙 :\n첫날밤을 제외하고, 게임 중 단 1회만 밤에 작동시킬 수 있습니다. 사회자가 능력을 승인하여 기록하면 사기꾼 플레이어 본인의 스마트폰 화면에 [경찰, 의사, 탐정, 시민, 기자] 중 하나를 고를 수 있는 전용 팝업창이 연동 생성되며, 하나를 전파 선택 시 무슨 거짓 특종이 살포될지 사회자 로그 시스템에 은밀히 통보됩니다." 
-            },
-            "스파이": { 
-                skill: "첩보 (직업 파악)", 
-                desc: "■ 능력 : 첩보 (직업 파악)\n■ 세부 규칙 :\n밤마다 한 명을 지목하여 대상이 소속된 본래 '고유 직업 명칭'을 은밀하게 조사하여 알아냅니다. 직업 자체는 사회자가 대시보드 및 내부 i버튼 시스템을 확인한 후 적절한 타이밍에 직접 수동 공개합니다. 만약 밤에 조사한 대상이 '마피아'일 경우, 그 즉시 마피아 조직과의 비밀 연합 채널이 개통되어 완벽한 접선 상태로 전환됩니다." 
-            },
-            "프로파일러": { 
-                skill: "심리분석 (스킬 무효화)", 
-                desc: "■ 능력 : 심리분석 (스킬 무효화)\n■ 세부 규칙 :\n밤마다 용의자 한 명을 선택한 뒤, 해당 용의자가 오늘 밤 '몇 번 플레이어에게 능력을 사용할 것인가'를 정확하게 추론하여 시스템에 입력합니다. 예측이 완전히 적중했을 경우, 해당 용의자의 밤 기술 작동을 완벽히 파쇄하고 무효화시키는 심리적 억제 효과를 발휘합니다." 
-            },
-            "경찰대생": { 
-                skill: "순찰 (수사권 승계)", 
-                desc: "■ 능력 : 순찰 (수사권 승계)\n■ 세부 규칙 :\n초기에는 일반 시민과 다름없이 밤 능력이 활성화되지 않으나, 시민 팀의 핵심 기둥인 '경찰'이 밤의 습격이나 낮의 투표로 인해 최종 사망하게 되는 순간 수사권이 자동으로 승계됩니다. 경찰 사망 다음날 밤부터 정식 수사권이 활성화되어, 밤마다 한 명을 순찰 및 조사하여 마피아 팀의 여부를 판독해 낼 수 있게 됩니다." 
-            },
-            "시민": { 
-                skill: "추리 (투표권)", 
-                desc: "■ 능력 : 추리 (투표권)\n■ 세부 규칙 :\n밤에 활성화되는 별도의 액티브 특수 스킬은 전혀 보유하고 있지 않습니다. 그러나 오직 낮 단계에서 발언권과 투표권 행사를 통해, 오프라인 현장 플레이어들의 모순점과 미묘한 심리 변화를 추리해 마피아 진영을 솎아내야 하는 시민 진영의 굳건한 기초 기반 세력입니다." 
-            },
-            "국회의원": { 
-                skill: "공권력 (다수표 & 방탄)", 
-                desc: "■ 능력 : 공권력 (다수표 & 방탄)\n■ 세부 규칙 :\n밤에는 별도의 행동 능력이 주어지지 않습니다. 다만 낮의 재판 투표 결과 최종 사형 선고를 받더라도, 면책 특권 및 공권력이 발동되어 죽지 않고 생존합니다. 또한, 표결의 영향력을 대폭 증폭시킬 수 있는 고유 표를 가집니다. 게임 시작 인원 설계 규칙에 의거하여 기본 1차 지목 투표 시 2표 이상의 다수 투표 가중치 권력을 기본적으로 행사합니다." 
-            },
-            "기자": { 
-                skill: "특종 보도", 
-                desc: "■ 능력 : 특종 보도\n■ 세부 규칙 :\n첫날밤이 지나간 이후부터 게임 중 단 1회에 한하여 밤에 조사를 수행할 수 있습니다. 자신이 전날 밤 미리 취재를 완료해 둔 특정 플레이어 한 명을 지목하여, 그의 실제 소속 직업을 전체 중계 화면 및 시스템에 강제로 인쇄·폭로하는 강력한 언론 특종 보도를 단행합니다. (게임 중 단 1회 소진 시 영구 비활성화)" 
-            },
-            "은퇴한킬러": { 
-                skill: "킬러 본능 (암살)", 
-                desc: "■ 능력 : 킬러 본능 (암살)\n■ 세부 규칙 :\n초기에는 무기로 무장하지 않은 은퇴 상태입니다. 본인의 플레이어 번호 바로 앞 번호(Pn-1) 혹은 바로 뒷 번호(Pn+1) 중 한 명이라도 사망 판정을 받게 되면 킬러 본능이 영구 각성합니다. 각성 완료된 밤부터 총 2회에 걸쳐 방어선을 뚫고 대상을 암살할 수 있는 야간 처단권을 얻어 스킬 입력이 개방됩니다." 
-            },
-            "의사": { 
-                skill: "치료 (처단 방어)", 
-                desc: "■ 능력 : 치료 (처단 방어)\n■ 세부 규칙 :\n밤마다 한 명을 선택해 긴급 수술 및 의학적 치료 버프를 부여합니다. 치료를 받은 플레이어는 당일 밤 마피아나 연쇄살인마로부터 사격 및 살해 위협을 받더라도 사상자 명단에서 제외되어 안전하게 생존합니다. 단, 자기 자신을 치료하는 자가 치료 행위는 시스템상 불가능합니다." 
-            },
-            "명의": { 
-                skill: "기적 (광역 치료)", 
-                desc: "■ 능력 : 기적 (광역 치료)\n■ 세부 규칙 :\n의사보다 진보된 광역 치료 기술을 탑재하고 있습니다. 밤에 지목한 타겟 플레이어 본인뿐만 아니라, 원형 테이블 상 그 타겟의 '좌측 이웃'과 '우측 이웃' 범위까지 치료 망을 넓혀 총 2인 이상이 동시에 야간 공격을 당하더라도 기적적으로 동시 소생시킬 수 있습니다. (자신 치료는 불가)" 
-            },
-            "비리판사": { 
-                skill: "절대 판결", 
-                desc: "■ 능력 : 절대 판결\n■ 세부 규칙 :\n밤에는 별도의 특수 행동 명령이 비활성화됩니다. 다만 최후의 변론 이후 펼쳐지는 2차 찬반 표결(심판)에서 대중의 중론을 완전히 짓밟는 절대적 재판권을 행사합니다. 다수의 플레이어들이 '살린다' 혹은 '죽인다'로 몰표를 던지더라도, 비리판사가 본인의 기기에서 최종 입력한 단 한 단독 판정(SAVE/KILL) 결과 원안대로 재판 결론이 즉시 강제 집행됩니다." 
-            },
-            "경찰": { 
-                skill: "수사 (마피아 검거)", 
-                desc: "■ 능력 : 수사 (마피아 검거)\n■ 세부 규칙 :\n시민 팀의 핵심 탐지 보직입니다. 밤이 찾아올 때마다 의심스러운 좌석 번호의 플레이어 한 명을 검문 수사할 수 있습니다. 수사 결과가 확정되면 해당 용의자가 '마피아 팀 조직원'인지, 아니면 조직원이 아닌지(시민/중립 등)에 대한 명확한 O/X 피드백 단서를 실시간 수집합니다." 
-            },
-            "사립탐정": { 
-                skill: "추리 (행적 추적)", 
-                desc: "■ 능력 : 추리 (행적 추적)\n■ 세부 규칙 :\n밤마다 용의자를 미행하여 직업 자체를 알아내지는 못하지만, 그 용의자가 오늘 밤 '몇 번 좌석을 향해 특수 능력을 조준하여 뻗어나갔는지' 그 구체적인 행적선의 경로를 추적하여 육안으로 관찰합니다. 스킬 대상자가 밤에 아무 일도 안 했다면 무동작 상태 정보 역시 고스란히 포착합니다." 
-            },
-            "테러리스트": { 
-                skill: "자폭 (동반 사망)", 
-                desc: "■ 능력 : 자폭 (동반 사망)\n■ 세부 규칙 :\n낮 투표 재판으로 처형당해 죽거나, 밤에 마피아 등의 공격을 받아 급습을 당하는 순간 심장에 장착된 폭탄을 행사의 방해 요소에게 격발시킵니다. 자신이 사망 판정을 받는 시점에 시스템 상에서 자신이 미리 타겟으로 고정해 두었던 플레이어 한 명을 강제로 껴안아 동반 자폭 사상자로 소멸시킵니다." 
-            },
-            "장의사": { 
-                skill: "부검 / 신분 위조", 
-                desc: "■ 능력 : 부검 / 신분 위조\n■ 세부 규칙 :\n낮이나 밤에 사망하여 무덤으로 간 플레이어들의 사체를 은밀히 부검하여, 가려져 있던 본래의 진짜 신분 직업 명단을 모두 투명하게 들여다볼 수 있습니다. 추가로 게임 도중 단 1회에 한하여, 사망자 중 한 명을 지정해 해당 사망자의 원래 프로필 직업군으로 자신의 대외 신분을 완벽히 위장할 수 있습니다." 
-            },
-            "연쇄살인마": { 
-                skill: "살인 (단독 살해)", 
-                desc: "■ 능력 : 살인 (단독 살해)\n■ 세부 규칙 :\n마피아와 시민 진영 양쪽 모두를 전멸시켜야 단독 승리할 수 있는 고독한 중립 진영의 처단자입니다. 마피아 조직의 사격 오더와는 완전히 별개로, 밤마다 독자적인 칼날을 휘둘러 매 회차 밤마다 1인을 확정 살해할 수 있습니다. 경찰에게 수사당할 시 즉시 '살인마' 정체가 검거되니 주의하십시오." 
-            },
-            "도플갱어": { 
-                skill: "클론화 (직업 복제)", 
-                desc: "■ 능력 : 클론화 (직업 복제)\n■ 세부 규칙 :\n첫날밤(1일차 밤)에만 단 한 번 작동하는 고유 변이 스킬입니다. 테이블 위에 배치된 임의의 플레이어 한 명을 세포 복제 타겟으로 지정합니다. 타겟 지정 완료 후 다음날 아침(2일차 낮)이 밝아오는 순간, 도플갱어는 완전히 소멸하며 자신이 지목했던 대상의 직업 능력, 소속 진영, 상세 설명을 100% 그대로 복사하여 제2의 동일 직업 플레이어로 새롭게 완벽 각성 변신합니다." 
-            }
-        };
-
-        const availableRoles = {
-            "마피아 팀": ["마피아", "해커", "마담", "사기꾼", "스파이"],
-            "시민 팀": ["프로파일러", "경찰대생", "시민", "국회의원", "기자", "은퇴한킬러", "의사", "명의", "비리판사", "경찰", "사립탐정", "테러리스트", "장의사"],
-            "중립 팀": ["연쇄살인마", "도플갱어"]
-        };
-
-        class Role {
-            constructor(name, faction, skillName, description) {
-                this.name = name; this.faction = faction; this.skillName = skillName; this.description = description; 
-            }
-        }
-
-        class Player {
-            constructor(seatNumber) {
-                this.seatNumber = seatNumber; this.playerName = ""; this.role = null; this.isAlive = true; this.x = 0; this.y = 0;
-                this.isContacted = false; this.isSkillUsed = false; this.isSwindlerPending = false; 
-            }
-            assignRole(role) { this.role = role; }
-        }
-
-        let players = []; let joinedCount = 0; let selectedPlayerId = null; let gameState = "MAIN"; 
-        let currentPhase = "DAY"; let dayCount = 1; let skillActor = null; let skillTarget = null; let nightActionLog = [];
-        let voteState = "NONE"; let voteTimerInterval = null; let activeVotes = {}; 
-        let judgmentVotes = { kill: 0, save: 0, judgeVote: null }; let judgmentTarget = null; let simulatorPlayerId = 1;
-        let historyLogs = []; let selectedHistoryView = "CURRENT"; 
-        let isPlayerMode = false;
-        let masterInitialized = false;
-
-        // 🔒 [보안 함수] 단방향 해시 스트링 반환 (SHA-256)
-        async function calculateSHA256(string) {
-            const msgBuffer = new TextEncoder().encode(string);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        // 🔒 [보안 함수] 패스워드 검증 처리
-        async function checkMasterAuth() {
-            const inputVal = document.getElementById("master-password-input").value;
-            const inputHash = await calculateSHA256(inputVal);
-            
-            if (inputHash === MASTER_HASH) {
-                document.getElementById("master-lock-screen").style.display = "none";
-                masterInitialized = true;
-                if (!gameState || gameState === "") gameState = "MAIN";
-                updateLocalUI();
-            } else {
-                alert("❌ 잘못된 인증키입니다. 사회자 권한을 획득할 수 없습니다.");
-                document.getElementById("master-password-input").value = "";
-            }
-        }
-
-        // 🎮 [실시간 참가자 등록 함수] 누락되었던 핵심 비즈니스 로직 추가
-        function submitPlayerJoin() {
-            const nameInput = document.getElementById("player-nickname");
-            const nickname = nameInput.value.trim();
-            
-            if (!nickname) return customAlert("사용할 닉네임을 입력해 주세요.");
-            if (players.length === 0) return customAlert("현재 입장 가능한 방이 활성화되지 않았습니다.");
-
-            // 아직 이름이 채워지지 않은 빈 자리(슬롯) 탐색
-            const firstEmptySlot = players.find(p => p.playerName === "");
-            if (!firstEmptySlot) {
-                return customAlert("❌ 이미 게임 정원이 가득 찬 방입니다.");
-            }
-
-            // 플레이어 객체에 닉네임 바인딩 및 세션 메모리 기록
-            firstEmptySlot.playerName = nickname;
-            joinedCount = players.filter(p => p.playerName !== "").length;
-            
-            localStorage.setItem("mySeatNumber", firstEmptySlot.seatNumber);
-
-            // 파이어베이스 원격 중앙 동기화 오더 발행 및 로컬 UI 즉각 리프레시
-            broadcastState();
-        }
-
-        function broadcastState() {
-            if (!isFirebaseConfigured) { updateLocalUI(); return; }
-            roomRef.set({
-                gameState: gameState, currentPhase: currentPhase, dayCount: dayCount, voteState: voteState,
-                joinedCount: joinedCount, selectedPlayerId: selectedPlayerId || null, activeVotes: activeVotes || {},
-                judgmentVotes: judgmentVotes || { kill: 0, save: 0, judgeVote: null },
-                judgmentTargetSeat: judgmentTarget ? judgmentTarget.seatNumber : null, nightActionLog: nightActionLog || [],
-                selectedHistoryView: selectedHistoryView, historyLogs: historyLogs || [],
-                players: players.map(p => ({
-                    seatNumber: p.seatNumber, playerName: p.playerName, isAlive: p.isAlive, x: p.x, y: p.y,
-                    isContacted: p.isContacted, isSkillUsed: p.isSkillUsed, isSwindlerPending: p.isSwindlerPending || false,
-                    role: p.role ? { name: p.role.name, faction: p.role.faction, skillName: p.role.skillName, description: p.role.description } : null
-                }))
-            });
-            updateLocalUI(); 
-        }
-
-        if (isFirebaseConfigured) {
-            roomRef.on('value', (snapshot) => {
-                const data = snapshot.val(); 
-                if (!data) {
-                    if(!isPlayerMode && masterInitialized) gameState = "MAIN";
-                    updateLocalUI();
-                    return;
-                }
-                
-                gameState = data.gameState || "MAIN"; currentPhase = data.currentPhase || "DAY"; dayCount = data.dayCount || 1;
-                voteState = data.voteState || "NONE"; joinedCount = data.joinedCount || 0; selectedPlayerId = data.selectedPlayerId || null;
-                activeVotes = data.activeVotes || {}; judgmentVotes = data.judgmentVotes || { kill: 0, save: 0, judgeVote: null };
-                nightActionLog = data.nightActionLog || [];
-                selectedHistoryView = data.selectedHistoryView || "CURRENT";
-                historyLogs = data.historyLogs || [];
-                if (data.players) {
-                    players = data.players.map(pData => {
-                        let p = new Player(pData.seatNumber); p.playerName = pData.playerName; p.isAlive = pData.isAlive; p.x = pData.x; p.y = pData.y;
-                        p.isContacted = pData.isContacted || false; p.isSkillUsed = pData.isSkillUsed || false;
-                        p.isSwindlerPending = pData.isSwindlerPending || false;
-                        if (pData.role) p.role = new Role(pData.role.name, pData.role.faction, pData.role.skillName, pData.role.description);
-                        return p;
-                    });
-                } else {
-                    players = [];
-                }
-                judgmentTarget = data.judgmentTargetSeat ? (players.find(p => p.seatNumber === data.judgmentTargetSeat) || null) : null;
-                
-                updateLocalUI();
-            });
-        }
-
-        function updateLocalUI() {
-            if (isPlayerMode) {
-                document.getElementById("master-lock-screen").style.display = "none";
-                document.getElementById("main-screen").style.display = "none";
-                document.getElementById("game-workspace").style.display = "none";
-                
-                const mySeat = localStorage.getItem("mySeatNumber");
-                const matchedPlayer = mySeat ? players.find(p => p.seatNumber == mySeat && p.playerName !== "") : null;
-
-                if (matchedPlayer) {
-                    document.getElementById("player-join-screen").style.display = "none";
-                    const sim = document.getElementById("smartphone-simulator");
-                    sim.style.display = "flex";
-                    sim.style.position = "fixed";
-                    sim.style.top = "0"; sim.style.left = "0";
-                    sim.style.width = "100vw"; sim.style.height = "100vh";
-                    sim.style.border = "none"; sim.style.borderRadius = "0"; sim.style.boxShadow = "none";
-                    syncSmartphoneView();
-                } else {
-                    document.getElementById("smartphone-simulator").style.display = "none";
-                    document.getElementById("player-join-screen").style.display = "flex";
-                    
-                    if (players.length === 0) {
-                        document.getElementById("player-join-status").innerText = "사회자가 아직 방을 개설하지 않았습니다.\n사회자가 세션을 오픈할 때까지 기다려 주세요.";
-                        document.getElementById("player-nickname").style.display = "none";
-                        document.getElementById("player-join-btn").style.display = "none";
-                    } else {
-                        const hasEmptySlot = players.some(p => p.playerName === "");
-                        if (!hasEmptySlot) {
-                            document.getElementById("player-join-status").innerText = "❌ 게임 정원이 가득 차서 더 이상 입장할 수 없습니다.";
-                            document.getElementById("player-nickname").style.display = "none";
-                            document.getElementById("player-join-btn").style.display = "none";
-                        } else {
-                            document.getElementById("player-join-status").innerText = "대기실이 활성화되었습니다!\n게임에 사용할 닉네임을 입력하고 아래 단추를 누르세요.";
-                            document.getElementById("player-nickname").style.display = "block";
-                            document.getElementById("player-join-btn").style.display = "block";
-                        }
-                    }
-                }
-                return;
-            }
-
-            if (!masterInitialized) {
-                document.getElementById("master-lock-screen").style.display = "flex";
-                document.getElementById("main-screen").style.display = "none";
-                document.getElementById("game-workspace").style.display = "none";
-                document.getElementById("player-join-screen").style.display = "none";
-                return;
-            }
-
-            document.getElementById("master-lock-screen").style.display = "none";
-
-            if (gameState === "MAIN") {
-                document.getElementById("main-screen").style.display = "flex";
-                document.getElementById("game-workspace").style.display = "none";
-                return;
-            }
-            document.getElementById("main-screen").style.display = "none";
-            document.getElementById("game-workspace").style.display = "flex";
-
-            if (gameState === "LOBBY") {
-                if (players.length === 0) {
-                    document.getElementById("setup-controls").style.display = "block";
-                    document.getElementById("lobby-panel").style.display = "none";
-                } else {
-                    document.getElementById("setup-controls").style.display = "none";
-                    document.getElementById("lobby-panel").style.display = "block";
-                }
-                document.getElementById("role-picker-panel").style.display = "none";
-                document.getElementById("play-dashboard-panel").style.display = "none";
-                document.getElementById("master-timeline-box").style.display = "none";
-                updateLobbyUI();
-            } 
-            else if (gameState === "SETUP") {
-                document.getElementById("setup-controls").style.display = "none";
-                document.getElementById("lobby-panel").style.display = "none";
-                document.getElementById("role-picker-panel").style.display = "block";
-                document.getElementById("play-dashboard-panel").style.display = "none";
-                document.getElementById("master-timeline-box").style.display = "none";
-                renderSeats();
-            } 
-            else if (gameState === "PLAY") {
-                document.getElementById("setup-controls").style.display = "none";
-                document.getElementById("lobby-panel").style.display = "none";
-                document.getElementById("role-picker-panel").style.display = "none";
-                document.getElementById("play-dashboard-panel").style.display = "block";
-                document.getElementById("master-timeline-box").style.display = "flex";
-                updatePhaseUI(); renderTimelineButtons(); renderSeats(); printLog();
-                rebuildSimSelector();
-            }
-            syncSmartphoneView();
-        }
-
-        function enterSetup() {
-            gameState = "LOBBY"; players = []; joinedCount = 0; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; activeVotes = {};
-            judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null; nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT";
-            document.getElementById("status-container").innerHTML = "초기 게임 인원을 설정하고 QR 대기실을 생성하세요.";
-            broadcastState();
-        }
-
-        function openQRLobby() {
-            const playerCount = parseInt(document.getElementById("playerCount").value);
-            if (playerCount < 4 || playerCount > 30) return customAlert("4~30명 사이로 입력해주세요.");
-
-            players = []; joinedCount = 0; const radius = 225;
-            for (let i = 1; i <= playerCount; i++) {
-                let p = new Player(i); const angle = ((i - 1) / playerCount) * (2 * Math.PI) - (Math.PI / 2);
-                p.x = 275 + radius * Math.cos(angle); p.y = 275 + radius * Math.sin(angle); players.push(p);
-            }
-            gameState = "LOBBY";
-            document.getElementById("status-container").innerHTML = `⚙️ 인원 설정 완료: [총 ${playerCount}명 테이블 생성]<br>실시간 디바이스 연동 접속 대기 중...`;
-            
-            const playerJoinUrl = window.location.origin + window.location.pathname + "?mode=player";
-            const qrImg = document.querySelector(".qr-placeholder img");
-            if (qrImg) {
-                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playerJoinUrl)}`;
-            }
-
-            broadcastState();
-        }
-
-        function resetLobbyToSetup() {
-            players = [];
-            joinedCount = 0;
-            document.getElementById("status-container").innerHTML = "초기 게임 인원을 설정하고 QR 대기실을 생성하세요.";
-            broadcastState();
-        }
-
-        function triggerAbsoluteReset() {
-            customConfirm("🚨 [서버 전체 초기화 경고]\n\n모든 플레이어 정보와 연결 기록을 삭제하고 메인 화면으로 되돌리겠습니까?", () => {
-                gameState = "MAIN"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; joinedCount = 0; selectedPlayerId = null;
-                players = []; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null;
-                nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT";
-                
-                const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
-                document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>우측에서 설정을 진행하세요</span>";
-                
-                if (isFirebaseConfigured) {
-                    roomRef.set({
-                        gameState: "MAIN", currentPhase: "DAY", dayCount: 1, voteState: "NONE", joinedCount: 0,
-                        selectedPlayerId: null, activeVotes: {}, judgmentVotes: { kill: 0, save: 0, judgeVote: null },
-                        judgmentTargetSeat: null, nightActionLog: [], selectedHistoryView: "CURRENT", historyLogs: [], players: []
-                    });
-                }
-                updateLocalUI();
-            });
-        }
-
-        function simulatePlayerJoin() {
-            if (players.length === 0) return customAlert("인원 설정이 먼저 진행되어야 합니다.");
-            while (joinedCount < players.length) {
-                players[joinedCount].playerName = "참가자" + (joinedCount + 1); joinedCount++;
-            }
-            broadcastState();
-        }
-
-        function updateLobbyUI() {
-            const grid = document.getElementById("lobby-player-list"); grid.innerHTML = ""; if (players.length === 0) return; 
-            for (let i = 0; i < players.length; i++) {
-                let div = document.createElement("div");
-                if (players[i].playerName !== "") {
-                    div.className = "joined-player"; div.innerText = `${i+1}번: ${players[i].playerName}`;
-                } else {
-                    div.className = "waiting-player"; div.innerText = `${i+1}번: 대기중...`;
-                }
-                grid.appendChild(div);
-            }
-            const allJoined = players.every(p => p.playerName !== "");
-            document.getElementById("lobby-next-btn").style.display = (allJoined && players.length > 0) ? "block" : "none";
-        }
-
-        function finishLobby() {
-            gameState = "SETUP"; buildRolePickerButtons();
-            document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
-            broadcastState();
-        }
-
-        function triggerGameReset() {
-            customConfirm("💥 정말 현재 설정된 배치를 초기화하고 직업 할당 단계(Setup)로만 한 단계 리셋하시겠습니까?", () => {
-                gameState = "SETUP"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; skillActor = null; skillTarget = null;
-                nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; judgmentTarget = null;
-                
-                players.forEach(p => {
-                    p.isAlive = true; p.isContacted = false; p.isSkillUsed = false; p.isSwindlerPending = false;
-                });
-                
-                document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
-                const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
-                logAction("🔄 사회자가 판을 파기하고 [직업 재설정] 단계로 되돌렸습니다.", "#f38ba8");
-                broadcastState();
-            });
-        }
-
-        function buildRolePickerButtons() {
-            const mapping = { "마피아 팀": "mafia-btns", "시민 팀": "citizen-btns", "중립 팀": "neutral-btns" };
-            for (let id of Object.values(mapping)) document.getElementById(id).innerHTML = "";
-            for (const [faction, roles] of Object.entries(availableRoles)) {
-                const container = document.getElementById(mapping[faction]);
-                roles.forEach(roleName => {
-                    const btn = document.createElement("button"); btn.className = "role-btn"; btn.innerText = roleName;
-                    btn.onclick = () => assignRoleToSelected(roleName, faction); container.appendChild(btn);
-                });
-            }
-        }
-
-        function handleSeatClick(seatNumber) {
-            const clickedPlayer = players.find(p => p.seatNumber === seatNumber);
-            if (gameState === "SETUP") {
-                selectedPlayerId = seatNumber;
-                document.getElementById("selected-player-text").innerText = `선택된 대상: P${seatNumber} [${clickedPlayer.playerName}]`;
-                renderSeats();
-            } 
-            else if (gameState === "PLAY" && currentPhase === "DAY" && voteState === "NONE") {
-                clickedPlayer.isAlive = !clickedPlayer.isAlive; broadcastState();
-            }
-            else if (gameState === "PLAY" && currentPhase === "NIGHT") {
-                if (selectedHistoryView !== "CURRENT") {
-                    return customAlert("현재 복기 모드입니다. 실시간 수집을 원하시면 상단의 [현재] 단추를 누르세요.");
-                }
-
-                if (skillActor && skillActor.seatNumber === clickedPlayer.seatNumber) {
-                    skillActor = null; skillTarget = null;
-                    document.getElementById("skill-actor-view").innerText = "시전자: 선택 대기 중";
-                    document.getElementById("skill-name-view").innerText = "보유 스킬: -";
-                    document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
-                    document.getElementById("swindler-master-zone").style.display = "none";
-                    renderSeats(); return;
-                }
-
-                if (!skillActor) {
-                    if (clickedPlayer.role) {
-                        const name = clickedPlayer.role.name;
-                        if (name === "시민" || name === "국회의원" || name === "비리판사") {
-                            return customAlert(`🚫 ${name} 직업군은 밤에 발동할 수 있는 고유 능력이 배정되어 있지 않습니다.`);
-                        }
-                        if (dayCount === 1 && (name === "사기꾼" || name === "기자")) {
-                            return customAlert(`🚫 '${name}' 직업군은 규칙상 첫날밤(1일차 밤)에 고유 능력을 시전할 수 없습니다.`);
-                        }
-                        if (name === "기자" && clickedPlayer.isSkillUsed) {
-                            return customAlert(`🚫 기자는 이미 이번 게임에서 단 1회 제공되는 특종 보도 능력을 소진했습니다.`);
-                        }
-                        if (name === "사기꾼" && clickedPlayer.isSkillUsed) {
-                            return customAlert(`🚫 해당 사기꾼은 이미 이번 라운드 거짓특종 카드를 소진했습니다.`);
-                        }
-                        if (name === "경찰대생") {
-                            const isOriginalPoliceAlive = players.some(p => p.role && p.role.name === "경찰" && p.isAlive);
-                            if (isOriginalPoliceAlive) {
-                                return customAlert(`🚫 기존 '경찰'이 아직 생존해 있으므로 경찰대생은 수사권을 행사할 수 없습니다.`);
-                            }
-                        }
-                        if (name === "은퇴한킬러") {
-                            const total = players.length;
-                            const currentIdx = players.findIndex(p => p.seatNumber === clickedPlayer.seatNumber);
-                            const prevIdx = (currentIdx - 1 + total) % total;
-                            const nextIdx = (currentIdx + 1) % total;
-                            if (players[prevIdx].isAlive && players[nextIdx].isAlive) {
-                                return customAlert(`🚫 은퇴한 킬러 본능이 각성하지 않았습니다. (인접 전후방 생존 중)`);
-                            }
-                        }
-                    }
-
-                    skillActor = clickedPlayer;
-                    document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${skillActor.playerName})</strong>`;
-                    document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${skillActor.role ? skillActor.role.skillName : '-'} ]`;
-                    
-                    if (skillActor.role && skillActor.role.name === "사기꾼") {
-                        document.getElementById("swindler-master-zone").style.display = "block";
-                        document.getElementById("skill-target-view").innerText = "스킬 대상: [사기꾼 단독 전파 - 참가자 모바일 화면에서 선택 예정]";
-                    } else {
-                        document.getElementById("swindler-master-zone").style.display = "none";
-                    }
-                } else if (!skillTarget) {
-                    if (skillActor.role && skillActor.role.name === "사기꾼") {
-                        if (clickedPlayer.role && (clickedPlayer.role.name === "시민" || clickedPlayer.role.name === "국회의원")) {
-                            return customAlert("🚫 해당 대상은 액티브 스킬이 없어 시전자로 전환할 수 없습니다.");
-                        }
-                        skillActor = clickedPlayer;
-                        document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${skillActor.playerName})</strong>`;
-                        document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${skillActor.role ? skillActor.role.skillName : '-'} ]`;
-                        document.getElementById("swindler-master-zone").style.display = "none";
-                        return;
-                    } 
-                    skillTarget = clickedPlayer;
-                    document.getElementById("skill-target-view").innerHTML = `스킬 대상: <strong>P${skillTarget.seatNumber} (${skillTarget.playerName})</strong>`;
-                } else {
-                    if (clickedPlayer.role) {
-                        const name = clickedPlayer.role.name;
-                        if (name === "시민" || name === "국회의원" || name === "비리판사") {
-                            return customAlert(`🚫 ${name} 직업군은 밤에 능력이 존재하지 않습니다.`);
-                        }
-                    }
-                    skillActor = clickedPlayer; skillTarget = null;
-                    document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${clickedPlayer.playerName})</strong>`;
-                    document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${clickedPlayer.role ? clickedPlayer.role.skillName : '-'} ]`;
-                    document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
-                    
-                    if (skillActor.role && skillActor.role.name === "사기꾼") {
-                        document.getElementById("swindler-master-zone").style.display = "block";
-                        document.getElementById("skill-target-view").innerText = "스킬 대상: [사기꾼 단독 전파 - 참가자 모바일 화면에서 선택 예정]";
-                    } else {
-                        document.getElementById("swindler-master-zone").style.display = "none";
-                    }
-                }
-                renderSeats();
-            }
-        }
-
-        function assignRoleToSelected(roleName, faction) {
-            if (selectedPlayerId === null) return customAlert("직업을 배정할 자리를 테이블 위에서 먼저 고르세요.");
-            const player = players.find(p => p.seatNumber === selectedPlayerId);
-            if (player) {
-                const data = roleDataMapping[roleName] || { skill: "고유 능력", desc: "설명 없음" };
-                player.assignRole(new Role(roleName, faction, data.skill, data.desc));
-            }
-            broadcastState();
-        }
-
-        function finalizeSetupAndStart() {
-            const unassigned = players.filter(p => p.role === null);
-            if (unassigned.length > 0) {
-                customConfirm(`배정되지 않은 플레이어가 ${unassigned.length}명 있습니다. 전부 일반 '시민'으로 자동 배정할까요?`, () => {
-                    unassigned.forEach(p => p.assignRole(new Role("시민", "시민 팀", roleDataMapping["시민"].skill, roleDataMapping["시민"].desc)));
-                    executeGameStartAction();
-                });
-            } else {
-                executeGameStartAction();
-            }
-        }
-
-        function executeGameStartAction() {
-            gameState = "PLAY"; currentPhase = "DAY"; voteState = "NONE"; dayCount = 1; historyLogs = []; selectedHistoryView = "CURRENT";
-            customAlert("🎯 세팅 완료! 오프라인 중계 및 스마트폰 실시간 화면 연동 모드가 시작되었습니다.");
-            broadcastState();
-        }
-
-        function startVotePhase(type) {
-            if (voteState !== "NONE") return; voteState = type; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null };
-            document.getElementById("timer-display").style.display = "block";
-            document.getElementById("btn-vote-1").disabled = true; document.getElementById("btn-vote-2").disabled = true;
-
-            let timeLeft = 10; document.getElementById("timer-display").innerText = `⏱ ${timeLeft}초 남음`;
-            broadcastState();
-
-            voteTimerInterval = setInterval(() => {
-                timeLeft--; document.getElementById("timer-display").innerText = `⏱ ${timeLeft}초 남음`;
-                if (timeLeft <= 0) { clearInterval(voteTimerInterval); endVotePhase(); }
-            }, 1000);
-        }
-
-        function endVotePhase() {
-            clearInterval(voteTimerInterval); document.getElementById("timer-display").style.display = "none";
-            if (voteState === "SUSPECT") calculateSuspectVotes();
-            else if (voteState === "JUDGMENT") calculateJudgmentVotes();
-            voteState = "NONE"; activeVotes = {};
-            document.getElementById("btn-vote-1").disabled = false; document.getElementById("arrow-layer").innerHTML = ""; 
-            broadcastState();
-        }
-
-        function calculateSuspectVotes() {
-            let tally = {}; players.forEach(p => tally[p.seatNumber] = 0);
-            for (const [voterSeat, targetSeat] of Object.entries(activeVotes)) {
-                const voter = players.find(p => p.seatNumber == voterSeat);
-                if (voter) {
-                    let weight = (voter.role && voter.role.name === "국회의원") ? 2 : 1; tally[targetSeat] += weight;
-                }
-            }
-            let maxVotes = 0; let suspectSeats = [];
-            for (const [seat, votes] of Object.entries(tally)) {
-                if (votes > maxVotes) { 
-                    maxVotes = votes; 
-                    suspectSeats = [seat]; 
-                } else if (votes === maxVotes && votes > 0) { 
-                    suspectSeats.push(seat); 
-                }
-            }
-
-            if (maxVotes === 0 || suspectSeats.length > 1) {
-                logAction(`⚖️ <strong>1차 투표 결과:</strong> 부결 (동률 또는 무투표). 재판 없이 다음 단계로 진행합니다.`, "#cba6f7");
-                judgmentTarget = null; document.getElementById("btn-vote-2").disabled = true;
-            } else {
-                judgmentTarget = players.find(p => p.seatNumber == suspectSeats[0]);
-                logAction(`⚖️ <strong>1차 투표 결과:</strong> P${judgmentTarget.seatNumber}(${judgmentTarget.playerName}) 최다 지목 득표 (${maxVotes}표)`, "#f38ba8");
-                document.getElementById("btn-vote-2").disabled = false;
-                customAlert(`[마스터 가이드 브리핑 멘트]\n\n"P${judgmentTarget.seatNumber}번 [${judgmentTarget.playerName}]님은 최후의 변론을 시작해 주세요."\n\n변론이 완료되면 '2차 투표 시작' 버튼을 눌러 찬반 심판을 진행하십시오.`);
-            }
-        }
-
-        function calculateJudgmentVotes() {
-            if (!judgmentTarget) return;
-            let result = "";
-            if (judgmentVotes.judgeVote === "KILL") {
-                result = "사형 (비리판사의 절대 권한 발동)"; judgmentTarget.isAlive = false;
-            } else if (judgmentVotes.judgeVote === "SAVE") {
-                result = "방면 (비리판사의 절대 권한 발동)";
-            } else {
-                if (judgmentVotes.kill > judgmentVotes.save) {
-                    result = "최종 처형 사형"; judgmentTarget.isAlive = false;
-                } else {
-                    result = "최종 생존 방면 (동률 부결 또는 찬성 부족)";
-                }
-            }
-            logAction(`⚖️ <strong>2차 심판 결과:</strong> P${judgmentTarget.seatNumber}[${judgmentTarget.playerName}] ➔ ${result} (찬성:${judgmentVotes.kill} / 반대:${judgmentVotes.save})`, "#f38ba8");
-            judgmentTarget = null;
-        }
-
-        function toggleGamePhase() {
-            if (currentPhase === "DAY") { 
-                currentPhase = "NIGHT"; 
-                selectedHistoryView = "CURRENT"; 
-            } 
-            else { 
-                const compressedActions = nightActionLog.map(act => ({
-                    actor: { seatNumber: act.actor.seatNumber, playerName: act.actor.playerName, x: act.actor.x, y: act.actor.y, role: act.actor.role ? { name: act.actor.role.name, faction: act.actor.role.faction } : null },
-                    target: { seatNumber: act.target.seatNumber, playerName: act.target.playerName, x: act.target.x, y: act.target.y }
-                }));
-                
-                historyLogs.push({ day: dayCount, actions: compressedActions });
-
-                if (dayCount === 1) {
-                    nightActionLog.forEach(action => {
-                        const actorPlayer = players.find(p => p.seatNumber === action.actor.seatNumber);
-                        if (actorPlayer && actorPlayer.role && actorPlayer.role.name === "도플갱어") {
-                            if (action.target.seatNumber === 0) return; 
-                            const targetPlayer = players.find(p => p.seatNumber === action.target.seatNumber);
-                            if (targetPlayer && targetPlayer.role) {
-                                actorPlayer.role = new Role(targetPlayer.role.name, targetPlayer.role.faction, targetPlayer.role.skillName, targetPlayer.role.description);
-                                actorPlayer.isContacted = targetPlayer.isContacted;
-                                logAction(`🔮 <strong>[도플갱어 복제 각성]</strong> P${actorPlayer.seatNumber}번이 P${targetPlayer.seatNumber}번의 [${targetPlayer.role.name}] 신분으로 완벽히 변신했습니다!`, "#50fa7b");
-                            }
-                        }
-                    });
-                }
-                
-                players.forEach(p => p.isSwindlerPending = false);
-                currentPhase = "DAY"; dayCount++; nightActionLog = []; 
-            }
-            skillActor = null; skillTarget = null;
-            document.getElementById("skill-actor-view").innerText = "시전자: 선택 대기 중";
-            document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
-            document.getElementById("swindler-master-zone").style.display = "none";
-            broadcastState();
-        }
-
-        function switchTimelineView(view) {
-            selectedHistoryView = view; broadcastState();
-        }
-
-        function renderTimelineButtons() {
-            const container = document.getElementById("timeline-nights-container"); container.innerHTML = "";
-            historyLogs.forEach(h => {
-                const btn = document.createElement("button"); btn.className = "timeline-btn";
-                if (selectedHistoryView === h.day) {
-                    btn.style.backgroundColor = "#f9e2af"; btn.style.color = "#11111b";
-                } else {
-                    btn.style.backgroundColor = "#313244"; btn.style.color = "#cdd6f4";
-                }
-                btn.innerText = `🌙 ${h.day}일차 밤`; btn.onclick = () => switchTimelineView(h.day);
-                container.appendChild(btn);
-            });
-
-            const curBtn = document.getElementById("btn-timeline-current");
-            if (selectedHistoryView === "CURRENT") {
-                curBtn.style.backgroundColor = "#89b4fa"; curBtn.style.color = "#11111b";
-            } else {
-                curBtn.style.backgroundColor = "#313244"; curBtn.style.color = "#cdd6f4";
-            }
-        }
-
-        function updatePhaseUI() {
-            const tc = document.getElementById("table-container"), cd = document.getElementById("center-display");
-            const pt = document.getElementById("current-phase-title"), tb = document.getElementById("phase-toggle-btn");
-            const nb = document.getElementById("night-menu-box"), db = document.getElementById("day-menu-box");
-
-            if (currentPhase === "NIGHT") {
-                tc.classList.add("night-theme");
-                cd.innerHTML = `<span style='color:#f9e2af; font-size:22px;'>🌙 밤 단계</span><br><span style='font-size:12px;'>${dayCount}일차 오더 수집</span>`;
-                pt.innerText = `${dayCount}일차 밤 (스킬 입력중)`; pt.style.borderLeftColor = "#f9e2af";
-                tb.innerText = "낮 단계로 전환 ☀️"; nb.style.display = "block"; db.style.display = "none";
-            } else {
-                tc.classList.remove("night-theme");
-                cd.innerHTML = `<span style='color:#89b4fa; font-size:22px;'>☀️ 낮 단계</span><br><span style='font-size:12px;'>${dayCount}일차 브리핑</span>`;
-                pt.innerText = `${dayCount}일차 낮`; pt.style.borderLeftColor = "#89b4fa";
-                tb.innerText = "밤 단계로 전환 🌙"; nb.style.display = "none"; db.style.display = "block";
-            }
-        }
-
-        function executeNightSkill() {
-            if (!skillActor) return customAlert("스킬을 사용할 시전자를 테이블 위에서 먼저 클릭해 주세요.");
-            
-            if (skillActor.role && skillActor.role.name === "사기꾼") {
-                if (skillActor.isSkillUsed) return customAlert("해당 사기꾼은 이미 이번 게임에서 스킬을 소진했습니다.");
-                
-                skillActor.isSwindlerPending = true; 
-                logAction(`🎭 <strong>[원격 요청 전송]</strong> 사기꾼(P${skillActor.seatNumber}) 기기로 거짓 특종 생성 전용 팝업 패널을 전송했습니다.`, "#cba6f7");
-                customAlert(`사기꾼(P${skillActor.seatNumber})의 스마트폰 화면에 직업 선택 패널이 활성화되었습니다.`);
-                
-                skillActor = null; skillTarget = null; broadcastState(); return;
-            }
-
-            if (!skillTarget) return customAlert("스킬을 적용할 대상 플레이어를 찍어주세요.");
-            if (skillActor.role && skillActor.role.name === "기자") skillActor.isSkillUsed = true;
-
-            if (skillActor.role && skillActor.role.name === "스파이" && skillTarget.role && skillTarget.role.name === "마피아") {
-                skillActor.isContacted = true;
-                logAction(`📢 <strong>[접선 완료]</strong> 스파이(P${skillActor.seatNumber})가 마피아(P${skillTarget.seatNumber})와 연합되었습니다!`, "#ff5555");
-            }
-            if (skillActor.role && skillActor.role.name === "마담" && skillTarget.role && skillTarget.role.name === "마피아") {
-                skillActor.isContacted = true;
-                logAction(`📢 <strong>[접선 완료]</strong> 마담(P${skillActor.seatNumber})이 마피아(P${skillTarget.seatNumber})와 연합되었습니다!`, "#ff5555");
-            }
-
-            nightActionLog.push({ actor: skillActor, target: skillTarget });
-            logAction(`🌟 <strong>[밤 ${dayCount}일차]</strong> P${skillActor.seatNumber}(${skillActor.playerName}) ➔ P${skillTarget.seatNumber} <strong>[${skillActor.role.skillName}]</strong>`);
-
-            if (skillActor.role.name === "해커") {
-                const info = skillTarget.role ? `${skillTarget.role.name} (${skillTarget.role.faction})` : '시민';
-                customAlert(`💻 [해커 정보 탐지 패널]\n\n지목한 플레이어: ${skillTarget.seatNumber}번 [${skillTarget.playerName}]\n확인된 신분 직업: ${info}`);
-            }
-            if (skillActor.role.name === "스파이") {
-                const trueRole = skillTarget.role ? skillTarget.role.name : "시민";
-                customAlert(`🕵️‍♂️ [스파이 첩보 알림]\n\n지목한 플레이어: P${skillTarget.seatNumber}번 [${skillTarget.playerName}]\n🎯 실제 정밀 직업: [ ${trueRole} ]`);
-            }
-
-            skillActor = null; skillTarget = null; broadcastState();
-        }
-
-        function executeMafiaConsensus() {
-            if (selectedHistoryView !== "CURRENT") return;
-            const target = skillTarget || skillActor;
-            if (!target) return customAlert("사격 조준선을 보낼 타겟 대상을 1명 골라주세요.");
-            const mafias = players.filter(p => p.isAlive && p.role && p.role.name === "마피아");
-            if (mafias.length === 0) return customAlert("현재 살아있는 마피아 조직원이 없습니다.");
-
-            if (target.role && target.role.faction === "마피아 팀" && target.role.name !== "마피아") {
-                target.isContacted = true;
-                logAction(`📢 <strong>[접선 완료]</strong> 마피아 사격 오더가 아군인 ${target.role.name}(P${target.seatNumber})에게 연결되었습니다!`, "#ff5555");
-            }
-
-            logAction(`🩸 <strong>[밤 ${dayCount}일차] 마피아 사격:</strong> 조직 연합 ➔ P${target.seatNumber}번 조준`, "#ff5555");
-            mafias.forEach(m => nightActionLog.push({ actor: m, target: target }));
-            skillActor = null; skillTarget = null; broadcastState();
-        }
-
-        function logAction(html, color = "#f9e2af") {
-            const alc = document.getElementById("action-log-list"); if (!alc) return;
-            const entry = document.createElement("div"); entry.className = "night-log-entry";
-            entry.style.borderLeftColor = color; entry.style.color = color; entry.innerHTML = html;
-            alc.insertBefore(entry, alc.firstChild);
-        }
-
-        function renderSeats() {
-            const sl = document.getElementById("seats-layer"); sl.innerHTML = ""; 
-            players.forEach(p => {
-                const seat = document.createElement("div"); seat.className = "player-seat";
-                if (gameState === "SETUP" && p.seatNumber === selectedPlayerId) seat.classList.add("selected");
-                if (gameState === "PLAY") {
-                    if (skillActor && p.seatNumber === skillActor.seatNumber) seat.classList.add("selected");
-                    if (skillTarget && p.seatNumber === skillTarget.seatNumber) seat.classList.add("target-selected");
-                }
-                if (!p.isAlive) seat.classList.add("dead");
-
-                let nameTag = p.playerName ? `<span style='font-size:9px; color:#f5c2e7; font-weight:bold;'>${p.playerName}</span>` : "";
-                if (p.role) {
-                    if (p.role.faction === "마피아 팀" && p.isAlive) seat.classList.add("mafia-color");
-                    else if (p.role.faction === "시민 팀" && p.isAlive) seat.classList.add("citizen-color");
-                    else if (p.role.faction === "중립 팀" && p.isAlive) seat.classList.add("neutral-color");
-                    seat.innerHTML = `<strong>P${p.seatNumber}</strong>${nameTag}<span>${p.role.name}</span>`;
-                } else {
-                    seat.innerHTML = `<strong>P${p.seatNumber}</strong>${nameTag}`;
-                }
-
-                seat.style.left = `${p.x}px`; seat.style.top = `${p.y}px`;
-                seat.onclick = () => handleSeatClick(p.seatNumber);
-
-                const bi = document.createElement("div"); bi.className = "btn-info"; bi.innerText = "i";
-                bi.onclick = (e) => { e.stopPropagation(); openInfoModal(p); };
-
-                const bm = document.createElement("div"); bm.className = "btn-move"; bm.innerText = "m";
-                bm.onpointerdown = (e) => {
-                    if (selectedHistoryView !== "CURRENT") return; 
-                    e.stopPropagation(); e.preventDefault(); bm.setPointerCapture(e.pointerId);
-                    let sx = e.clientX, sy = e.clientY;
-                    bm.onpointermove = (ev) => {
-                        p.x += ev.clientX - sx; p.y += ev.clientY - sy;
-                        seat.style.left = `${p.x}px`; seat.style.top = `${p.y}px`;
-                        sx = ev.clientX; sy = ev.clientY; drawSkillArrows(); 
-                    };
-                    bm.onpointerup = () => { 
-                        bm.onpointermove = null; bm.onpointerup = null; bm.releasePointerCapture(e.pointerId); broadcastState(); 
-                    };
-                };
-                seat.appendChild(bi); seat.appendChild(bm); sl.appendChild(seat);
-            });
-            drawSkillArrows();
-        }
-
-        function drawSkillArrows() {
-            const al = document.getElementById("arrow-layer"); al.innerHTML = ""; 
-            let activeActionsToDraw = [];
-            if (selectedHistoryView === "CURRENT") {
-                if (gameState === "PLAY" && currentPhase === "NIGHT") activeActionsToDraw = nightActionLog;
-            } else {
-                const foundPastNight = historyLogs.find(h => h.day === selectedHistoryView);
-                if (foundPastNight) activeActionsToDraw = foundPastNight.actions;
-            }
-
-            activeActionsToDraw.forEach((action, index) => {
-                const act = action.actor, tgt = action.target;
-                if (!tgt || tgt.seatNumber === 0) return; 
-
-                let colorCode = "#5599ff", markerId = "arrow-citizen";
-                if (act.role && act.role.faction === "마피아 팀") { colorCode = "#ff5555"; markerId = "arrow-mafia"; } 
-                else if (act.role && act.role.faction === "중립 팀") { colorCode = "#50fa7b"; markerId = "arrow-neutral"; }
-
-                const dx = tgt.x - act.x, dy = tgt.y - act.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                let x1 = act.x, y1 = act.y, x2 = tgt.x, y2 = tgt.y;
-                if (distance > 64) {
-                    const r = 32; 
-                    x1 = act.x + (dx / distance) * r; y1 = act.y + (dy / distance) * r;
-                    x2 = tgt.x - (dx / distance) * (r + 16); y2 = tgt.y - (dy / distance) * (r + 16);
-                }
-
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-                line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-                line.setAttribute("stroke", colorCode); line.setAttribute("stroke-width", "3.5");
-                line.setAttribute("stroke-dasharray", "6,6"); line.setAttribute("marker-end", `url(#${markerId})`);
-                line.classList.add("skill-arrow");
-                
-                if (selectedHistoryView === "CURRENT") {
-                    line.onclick = (e) => {
-                        e.stopPropagation();
-                        customConfirm(`P${act.seatNumber}의 오더 기록을 대시보드에서 취소할까요?`, () => {
-                            nightActionLog.splice(index, 1); broadcastState();
-                        });
-                    };
-                }
-                al.appendChild(line);
-            });
-
-            if (gameState === "PLAY" && currentPhase === "DAY" && voteState === "SUSPECT") {
-                for (const [voterSeat, targetSeat] of Object.entries(activeVotes)) {
-                    const act = players.find(p => p.seatNumber == voterSeat); const tgt = players.find(p => p.seatNumber == targetSeat);
-                    if (act && tgt) {
-                        const dx = tgt.x - act.x, dy = tgt.y - act.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        let x1 = act.x, y1 = act.y, x2 = tgt.x, y2 = tgt.y;
-                        if (distance > 64) {
-                            const r = 32;
-                            x1 = act.x + (dx / distance) * r; y1 = act.y + (dy / distance) * r;
-                            x2 = tgt.x - (dx / distance) * (r + 16); y2 = tgt.y - (dy / distance) * (r + 16);
-                        }
-                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                        line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-                        line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-                        line.setAttribute("stroke", "#cba6f7"); line.setAttribute("stroke-width", "4.5"); line.setAttribute("marker-end", "url(#arrow-vote)");
-                        al.appendChild(line);
-                    }
-                }
-            }
-        }
-
-        function printLog() {
-            if (gameState === "MAIN" || gameState === "LOBBY") return; 
-            const sc = document.getElementById("status-container"); if (!sc) return;
-            let html = "<strong>[사회자 실시간 명단 현황판]</strong><br><br>";
-            players.forEach(p => {
-                let s = p.isAlive ? "" : " (사망)", style = p.isAlive ? "" : "text-decoration: line-through; opacity: 0.6;";
-                let n = p.playerName ? ` [${p.playerName}]` : "";
-                let cnt = p.isContacted ? " <span style='color:#ff5555; font-size:10px;'>[접선됨]</span>" : "";
-                if (p.role) {
-                    let c = p.role.faction === "마피아 팀" ? "#ff5555" : (p.role.faction === "중립 팀" ? "#50fa7b" : "#5599ff");
-                    html += `P${p.seatNumber}${n} : <span style='color:${c}; ${style}'><strong>${p.role.name}</strong>${s}${cnt}</span><br>`;
-                } else {
-                    html += `P${p.seatNumber}${n} : <span style='color:#6c7086; ${style}'>직업 대기중${s}</span><br>`;
-                }
-            });
-            sc.innerHTML = html;
-        }
-
-        function rebuildSimSelector() {
-            const sel = document.getElementById("sim-id-selector"); if(sel.options.length === players.length) return;
-            sel.innerHTML = "";
-            players.forEach(p => {
-                let opt = document.createElement("option"); opt.value = p.seatNumber;
-                opt.innerText = `P${p.seatNumber} (${p.playerName || '대기'})`;
-                if(p.seatNumber === simulatorPlayerId) opt.selected = true;
-                sel.appendChild(opt);
-            });
-        }
-        function changeSimulatedPlayer(val) {
-            simulatorPlayerId = parseInt(val); syncSmartphoneView();
-        }
-
-        function toggleSmartphoneSimulator() {
-            const sim = document.getElementById("smartphone-simulator");
-            sim.style.display = sim.style.display === "none" ? "flex" : "none"; syncSmartphoneView();
-        }
-
-        function syncSmartphoneView() {
-            let currentId = simulatorPlayerId;
-            if (isPlayerMode) {
-                const mySeat = localStorage.getItem("mySeatNumber");
-                if (mySeat) currentId = parseInt(mySeat);
-                else return; 
-            }
-
-            const p1 = players[currentId - 1]; if (!p1) return;
-            document.getElementById("phone-player-name").innerText = `[나] ${p1.playerName} (P${p1.seatNumber})`;
-            document.getElementById("phone-role-btn").style.display = (gameState === "PLAY" && p1.role) ? "block" : "none";
-
-            const msg = document.getElementById("phone-status-msg");
-            const judgePanel = document.getElementById("phone-judgment-panel"); judgePanel.style.display = "none";
-
-            if (voteState === "SUSPECT") {
-                msg.innerText = p1.isAlive ? "🔥 마피아로 의심되는 생존자를 선택 후 지목 투표하세요!" : "사망 상태입니다. 관전 대기하세요.";
-                msg.style.color = "#f38ba8";
-            } else if (voteState === "JUDGMENT") {
-                if (p1.isAlive && p1 !== judgmentTarget && judgmentTarget) {
-                    msg.innerText = `🔥 무대 위 대상 [${judgmentTarget.playerName}] 님을 처형하시겠습니까?`;
-                    judgePanel.style.display = "flex";
-                } else { msg.innerText = "찬반 심판 투표가 진행 중입니다."; }
-            } 
-            else if (gameState === "PLAY" && currentPhase === "NIGHT" && p1.isAlive && p1.role && p1.role.name === "사기꾼" && p1.isSwindlerPending) {
-                if (p1.isSkillUsed) {
-                    msg.innerText = "🎭 이미 이번 게임에서 거짓 특종 전파 스킬을 소진 완료했습니다.";
-                    msg.style.color = "#6c7086";
-                } else {
-                    msg.innerHTML = `
-                        <div style="color:#f9e2af; font-weight:bold; margin-bottom:6px;">🎭 사기꾼 전용 거짓특종 전파망</div>
-                        <div style="font-size:11px; margin-bottom:8px; color:#a6adc8;">사회자가 권한을 승인했습니다. 아래 5대 직업 중 내일 아침 뿌릴 거짓 루머 대상을 1개 선택하세요:</div>
-                        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; width:100%;">
-                            <button class="swindler-btn" onclick="phoneSwindlerAction('경찰')">경찰</button>
-                            <button class="swindler-btn" onclick="phoneSwindlerAction('의사')">의사</button>
-                            <button class="swindler-btn" onclick="phoneSwindlerAction('탐정')">탐정</button>
-                            <button class="swindler-btn" onclick="phoneSwindlerAction('시민')">시민</button>
-                            <button class="swindler-btn" onclick="phoneSwindlerAction('기자')" style="grid-column: span 2; background-color:#f5c2e7;">기자</button>
-                        </div>
-                    `;
-                }
-            } else {
-                msg.innerText = gameState === "PLAY" ? `[현재 ${dayCount}일차 ${currentPhase === 'DAY'?'낮':'밤'}] 사회자의 진행 신호를 대기하세요.` : "사회자의 방 개설을 대기하고 있습니다.";
-                msg.style.color = "#a6adc8";
-            }
-
-            const list = document.getElementById("phone-player-list"); list.innerHTML = "";
-            players.forEach(p => {
-                if (p.playerName === "") return; 
-                const item = document.createElement("div"); item.className = "phone-player-item" + (p.isAlive ? "" : " dead");
-                let finalDisplayName = p.playerName, textColor = "#cdd6f4", isTargetVisibleInRedNetwork = false;
-
-                if (p1.role && p1.role.faction === "마피아 팀") {
-                    if (p1.role.name === "마피아") {
-                        if (p.role && p.role.name === "마피아") isTargetVisibleInRedNetwork = true;
-                        if (p.role && (p.role.name === "스파이" || p.role.name === "마담" || p.role.name === "사기꾼" || p.role.name === "해커") && p.isContacted) isTargetVisibleInRedNetwork = true;
-                    } 
-                    else if (p1.isContacted) {
-                        if (p.role && p.role.name === "마피아") isTargetVisibleInRedNetwork = true;
-                        if (p.role && p.role.faction === "마피아 Team" && p.isContacted) isTargetVisibleInRedNetwork = true;
-                    }
-                }
-
-                if (isTargetVisibleInRedNetwork) {
-                    finalDisplayName = `P${p.seatNumber} ${p.playerName}`; textColor = "#ff5555";
-                }
-
-                let html = `<span style="color: ${textColor}; font-weight: ${isTargetVisibleInRedNetwork ? 'bold' : 'normal'};">${finalDisplayName} ${!p.isAlive ? '(사망)' : ''}</span>`;
-                if (voteState === "SUSPECT" && p1.isAlive && p.isAlive && p !== p1) {
-                    const myTargetSeat = activeVotes[isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId];
-                    const hasVoted = myTargetSeat == p.seatNumber ? "background-color:#a6e3a1; color:#11111b" : "";
-                    html += `<button class="phone-vote-btn" style="display:block; ${hasVoted}" onclick="castSuspectVote(${p.seatNumber})">지목</button>`;
-                }
-                item.innerHTML = html; list.appendChild(item);
-            });
-        }
-
-        function phoneSwindlerAction(chosenRole) {
-            const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
-            const p1 = players[mySeat - 1];
-            if (!p1 || p1.role.name !== "사기꾼" || p1.isSkillUsed) return;
-            
-            p1.isSkillUsed = true; p1.isSwindlerPending = false; 
-            logAction(`🎭 <strong>[사기꾼 거짓특종]</strong> 사기꾼 P${p1.seatNumber}가 스마트폰에서 직접 <strong>[${chosenRole}]</strong> 날조를 유포했습니다!`, "#f9e2af");
-            
-            customAlert(`🚨 [사기꾼 역추적 중계 알림] 🚨\n\n사기꾼 진영의 P${p1.seatNumber}번 플레이어 [${p1.playerName}] 님이 본인의 스마트폰 창에서 [ ${chosenRole} ] 직업에 대한 거짓 루머 살포 오더를 확정 전파했습니다.\n\n사회자는 다음 아침 날조 브리핑 연출 시 이 점을 반드시 메모 및 활용하세요.`);
-            nightActionLog.push({ actor: p1, target: { seatNumber: 0, playerName: `거짓특종:${chosenRole}`, x: p1.x, y: p1.y } });
-            broadcastState();
-        }
-
-        function castSuspectVote(targetSeat) {
-            const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
-            if (activeVotes[mySeat]) return customAlert("이미 지목권을 행사하셨습니다.");
-            activeVotes[mySeat] = targetSeat; broadcastState();
-        }
-
-        function castJudgmentVote(decision) {
-            const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
-            const p1 = players[mySeat - 1]; if (!p1) return;
-            if (p1.role && p1.role.name === "비리판사") judgmentVotes.judgeVote = decision;
-            if (decision === "KILL") judgmentVotes.kill++; else judgmentVotes.save++;
-            document.getElementById("phone-judgment-panel").style.display = "none";
-            document.getElementById("phone-status-msg").innerText = "투표 완료. 사회자의 진행 신호를 기다리는 중...";
-            broadcastState();
-        }
-
-        function showPhoneRoleInfo() {
-            const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
-            const p1 = players[mySeat - 1]; if (p1 && p1.role) openInfoModal(p1);
-        }
-
-        function openInfoModal(p) {
-            if (!p.role) return customAlert("직업 정보가 배정되지 않았습니다.");
-            let c = p.role.faction === "마피아 팀" ? "#ff5555" : (p.role.faction === "중립 팀" ? "#50fa7b" : "#5599ff");
-            
-            document.getElementById("modal-role-name").innerHTML = `
-                <div style="font-size:14px; color:#a6adc8; margin-bottom:4px; font-weight:normal;">
-                    [ 🎖️ P${p.seatNumber}번 플레이어 고유 신분 ]
-                </div>
-                <span style='color:${c}; font-size:24px; font-weight:900;'>${p.role.name}</span> 
-                <span style='font-size:14px; color:#6c7086; font-weight:normal;'>(${p.role.faction})</span>
-            `;
-            document.getElementById("modal-role-desc").innerText = p.role.description;
-            document.getElementById("info-modal").style.display = "flex";
-        }
-        function closeInfoModal() { document.getElementById("info-modal").style.display = "none"; }
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('mode') === 'player') {
-            isPlayerMode = true;
-        } else {
-            masterInitialized = false;
-        }
-        updateLocalUI();
-    </script>
+<div id="master-lock-screen" style="display: flex;">
+<h2 style="color: #ff5555; font-size: 28px; margin-bottom: 5px; font-weight: 900; letter-spacing: 2px;">⚠️ CONTROL ACCESS DENIED</h2>
+<p style="font-size: 14px; color: #a6adc8; margin-bottom: 25px; text-align: center;">이 화면은 오직 개설자(사회자) 본인만 진입할 수 있습니다.</p>
+<input type="password" id="master-password-input" placeholder="사회자 보안 인증키 입력" style="padding: 14px; font-size: 16px; width: 80%; max-width: 280px; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px;">
+<button onclick="checkMasterAuth()" style="background-color: #ff5555; color: #11111b; padding: 12px 50px; font-size: 16px;">대시보드 잠금 해제</button>
+</div>
+
+<div id="player-join-screen" style="display: none; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: radial-gradient(circle, #2b2a3a 0%, #0f0f14 100%); color: #cdd6f4;">
+<h2 style="color: #a6e3a1; font-size: 32px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px;">🎮 게임 참가하기</h2>
+<p id="player-join-status" style="font-size: 15px; color: #a6adc8; margin-bottom: 25px; text-align: center; padding: 0 20px;">사회자가 대기실을 열 때까지 기다려 주세요.</p>
+<input type="text" id="player-nickname" placeholder="사용할 닉네임 입력" style="padding: 14px; font-size: 18px; border-radius: 8px; border: none; background-color: #313244; color: #cdd6f4; text-align: center; margin-bottom: 20px; width: 80%; max-width: 280px; font-weight: bold;">
+<button id="player-join-btn" onclick="submitPlayerJoin()" style="background-color: #a6e3a1; color: #11111b; padding: 14px 60px; font-size: 18px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(166,227,161,0.3);">방 입장하기</button>
+</div>
+
+<div id="main-screen" style="display: none;">
+<svg class="mafia-silhouette-box" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<circle cx="50" cy="50" r="46" fill="none" stroke="#ff5555" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>
+<path d="M 18 48 Q 50 43 82 48 L 85 53 Q 50 49 15 53 Z" fill="#ff5555"/>
+<path d="M 28 48 C 28 24, 72 24, 72 48 Z" fill="#1e1e2e" stroke="#ff5555" stroke-width="2.5"/>
+<rect x="29" y="45" width="42" height="3" fill="#ff5555"/>
+<path d="M 33 68 L 50 88 L 67 68 L 59 60 L 41 60 Z" fill="#ff5555" opacity="0.15"/>
+<path d="M 46 62 L 54 62 L 52 80 L 50 84 L 48 80 Z" fill="#ff5555"/>
+</svg>
+
+<div class="title-container">
+<h1 class="title-text">Offline Mafia</h1>
+<div class="subtitle">사회자 전용 실시간 중계 마스터 대시보드</div>
+</div>
+<button class="start-btn" onclick="enterSetup()">입장</button>
+</div>
+
+<div id="game-workspace">
+<div class="workspace-header">
+<div class="workspace-title-box">
+<h2 class="workspace-title">🎬 Play Master Dashboard</h2>
+<span class="workspace-subtitle">오프라인 마피아 실시간 중앙 관제 시스템</span>
+</div>
+<div class="workspace-btn-zone">
+<button class="btn-absolute-reset" onclick="triggerAbsoluteReset()">🚨 서버 전체 초기화 (처음으로)</button>
+<span class="workspace-badge">LIVE SYNC ACTIVE</span>
+</div>
+</div>
+
+<div class="main-container">
+<div class="timeline-panel" id="master-timeline-box" style="display: none;">
+<div class="timeline-title">⏳ 타임라인</div>
+<button class="timeline-btn" id="btn-timeline-reset" onclick="triggerGameReset()" style="background-color: #f38ba8; color: #11111b; margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.1);">🔄 직업단계 재설정</button>
+<button class="timeline-btn" id="btn-timeline-current" onclick="switchTimelineView('CURRENT')" style="background-color: #89b4fa; color: #11111b;">[현재]</button>
+<div id="timeline-nights-container" style="display: flex; flex-direction: column; width: 100%;"></div>
+</div>
+
+<div class="left-panel">
+<div id="table-container">
+<div id="center-display">원형 테이블<br><span style="font-size:13px; font-weight:normal;">우측에서 설정을 진행하세요</span></div>
+<svg id="arrow-canvas">
+<defs>
+<marker id="arrow-mafia" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#ff5555" />
+</marker>
+<marker id="arrow-citizen" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#5599ff" />
+</marker>
+<marker id="arrow-neutral" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#50fa7b" />
+</marker>
+<marker id="arrow-vote" markerWidth="30" markerHeight="30" refX="22" refY="15" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,5 L25,15 L0,25 Q6,15 0,5 z" fill="#cba6f7" />
+</marker>
+</defs>
+<g id="arrow-layer"></g>
+</svg>
+<div id="seats-layer"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<div class="controls" id="setup-controls">
+<h3 style="color: #ff5555; margin-top: 0;">🎲 초기 게임 인원 설정</h3>
+<label for="playerCount">인원 설정 (4~30명): </label>
+<input type="number" id="playerCount" value="8" min="4" max="30">
+<button onclick="openQRLobby()" style="margin-top: 10px; width: 100%;">QR코드 생성 (대기실 오픈) ➔</button>
+</div>
+
+<div id="lobby-panel" style="display: none;">
+<h3 style="color: #a6e3a1; margin-top: 0;">스마트폰으로 접속하세요</h3>
+<div class="qr-placeholder">
+<img src="" alt="QR Code">
+</div>
+<p style="font-size: 11px; color: #a6adc8;">※ 오프라인 세션 전용 가상 테스트 버튼을 활용해 이름을 채워보세요.</p>
+<button onclick="simulatePlayerJoin()" style="background-color: #313244; color: #cdd6f4; width: 100%; margin-bottom: 8px;">👤 가상 플레이어 전체 접속</button>
+<button onclick="resetLobbyToSetup()" style="background-color: #f38ba8; color: #11111b; width: 100%; margin-bottom: 12px; font-weight: bold;">◀ 인원 설정 다시 하기 (방 초기화)</button>
+
+<div class="player-list-grid" id="lobby-player-list"></div>
+<button class="btn-complete" id="lobby-next-btn" onclick="finishLobby()" style="display: none;">모두 접속 완료 - 직업 설정 및 배치 ➔</button>
+</div>
+
+<div id="role-picker-panel" style="display: none;">
+<div id="selected-player-text" class="selected-info">지정할 플레이어를 클릭하세요.</div>
+<div class="faction-section">
+<div class="faction-title" style="color: #ff5555;">■ 마피아 팀</div>
+<div class="role-buttons" id="mafia-btns"></div>
+</div>
+<div class="faction-section">
+<div class="faction-title" style="color: #5599ff;">■ 시민 팀</div>
+<div class="role-buttons" id="citizen-btns"></div>
+</div>
+<div class="faction-section">
+<div class="faction-title" style="color: #50fa7b;">■ 중립 팀</div>
+<div class="role-buttons" id="neutral-btns"></div>
+</div>
+<button class="btn-complete" onclick="finalizeSetupAndStart()">게임 준비 완료 (플레이어 화면 동기화) ➔</button>
+</div>
+
+<div id="play-dashboard-panel" style="display: none;">
+<div class="selected-info" id="current-phase-title" style="border-left-color: #f38ba8; font-size: 16px;">상태: Setup 완료</div>
+
+<div id="timer-display" class="timer-display">⏱ 10초 남음</div> 
+
+<div id="night-menu-box" style="display: none;">
+<div style="font-size: 14px; margin-bottom: 5px; color: #f9e2af; font-weight: bold;">🌙 밤 메뉴 - 스킬 로그 기록</div>
+<p style="margin: 0 0 10px 0; font-size: 11px; color: #f38ba8; font-weight: bold;">
+※ 잘못 그려진 스킬 화살표(선)를 클릭하면 실시간 삭제/취소가 가능합니다.
+</p>
+
+<div class="skill-box">
+<div id="skill-actor-view">시전자: 선택 대기 중</div>
+<div id="skill-name-view" style="font-weight: bold; color: #f5c2e7; margin: 4px 0;">보유 스킬: -</div>
+<div id="skill-target-view" style="margin-bottom: 8px;">스킬 대상: 선택 대기 중</div>
+
+<button class="btn-night-action" id="btn-execute-standard" onclick="executeNightSkill()">개인 스킬 실행 및 기록</button>
+
+<div id="swindler-master-zone" style="display:none; border: 1px dashed #f9e2af; padding:10px; margin-top:8px; border-radius:4px; background:#11111b; text-align:center;">
+<div style="font-size:12px; color:#f9e2af; font-weight:bold;">🎭 사기꾼 스킬 활성화 상태</div>
+<div style="font-size:11px; color:#a6adc8; margin-top:4px;">[개인 스킬 실행] 버튼을 누르면 해당 사기꾼 플레이어 스마트폰 시뮬레이터 창에 5대 직업 선택 창이 연격 표출됩니다.</div>
+</div>
+</div>
+<div style="border: 1px dashed #ff5555; padding: 10px; border-radius: 6px; margin-top: 10px; background-color: #11111b;">
+<div style="font-size: 13px; color: #ff5555; font-weight: bold;">🔫 마피아 합의 사격</div>
+<button style="background-color: #ff5555; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px;" onclick="executeMafiaConsensus()">생존 마피아 전원 합의 사격으로 기록</button>
+</div>
+</div>
+
+<div id="day-menu-box" style="display: none;">
+<div style="font-size: 14px; color: #89b4fa; font-weight: bold;">☀️ 낮 메뉴 (재판 및 투표)</div>
+<p style="margin: 5px 0; font-size: 12px; color: #a6adc8;">※ 좌석 클릭 시 생존/사망 즉시 토글 반영 (참가자 화면 동기화)</p>
+
+<div class="vote-btn-group">
+<button class="btn-vote-start" id="btn-vote-1" onclick="startVotePhase('SUSPECT')">1차 투표 시작<br>(마피아 지목)</button>
+<button class="btn-vote-start" id="btn-vote-2" onclick="startVotePhase('JUDGMENT')" style="background-color: #f38ba8; color: white;" disabled>2차 투표 시작<br>(최후의 찬반)</button>
+</div>
+</div>
+
+<button class="btn-phase-toggle" id="phase-toggle-btn" onclick="toggleGamePhase()">밤 단계로 전환 🌙</button>
+
+<div class="simulator-selector-box">
+<span style="color: #89dceb; font-weight: bold;">📱 기기 테스트 전환:</span>
+<select id="sim-id-selector" onchange="changeSimulatedPlayer(this.value)" style="background:#313244; color:#cdd6f4; border:none; padding:4px; border-radius:4px;"></select>
+<button onclick="toggleSmartphoneSimulator()" style="background-color: #89dceb; color: #11111b; padding: 4px 8px; font-size:11px;">화면 열기/닫기</button>
+</div>
+</div>
+
+<div id="log-wrapper">
+<div id="status-container">방을 만들고 접속을 진행해 주세요.</div>
+<div id="action-log-container">
+<strong style="color: #f5c2e7;">[🔮 실시간 스킬 및 판정 로그]</strong><br>
+<span style="color:#6c7086; font-size:11px;">사상자 정보 및 밤 스킬 로그가 상시 영구 노출됩니다.</span><br><br>
+<div id="action-log-list"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="smartphone-simulator">
+<div class="phone-header">
+<span id="phone-player-name">대기실 접속중...</span>
+<button class="phone-role-btn" id="phone-role-btn" onclick="showPhoneRoleInfo()" style="display:none;">[직업정보]</button>
+</div>
+<div class="phone-body">
+<div id="phone-status-msg" style="text-align: center; color: #f9e2af; font-size: 12px;">사회자의 시작을 기다리고 있습니다.</div> 
+<div id="phone-judgment-panel" style="display: none; gap: 10px; margin-bottom: 15px;">
+<button class="phone-judge-btn" style="background-color: #a6e3a1; color: #11111b;" onclick="castJudgmentVote('SAVE')">살린다 (찬성)</button>
+<button class="phone-judge-btn" style="background-color: #ff5555; color: white;" onclick="castJudgmentVote('KILL')">죽인다 (반대)</button>
+</div> 
+<div class="phone-player-list" id="phone-player-list"></div>
+</div>
+</div>
+
+<div id="info-modal">
+<div class="modal-content" style="max-width: 440px; border-color: #cba6f7; box-shadow: 0 0 30px rgba(203,166,247,0.3);">
+<span class="modal-close" onclick="closeInfoModal()">&times;</span>
+<div id="modal-role-name">직업 이름</div>
+<div id="modal-role-desc">직업 설명이 여기에 표시됩니다.</div>
+</div>
+</div>
+
+<div id="alert-modal">
+<div class="modal-content" style="border-color: #f38ba8; max-width: 400px;">
+<div id="alert-modal-body" style="white-space: pre-line; font-size: 14px; margin-bottom: 18px; line-height: 1.6; color: #cdd6f4; text-align: left; padding: 5px;">알림 내용</div>
+<button onclick="closeAlertModal()" style="background-color: #f38ba8; color: #11111b; padding: 8px 25px; font-weight: bold; width: 100%;">확인</button>
+</div>
+</div>
+
+<div id="confirm-modal">
+<div class="modal-content" style="border-color: #f9e2af; max-width: 400px;">
+<div id="confirm-modal-body" style="white-space: pre-line; font-size: 14px; margin-bottom: 18px; line-height: 1.6; color: #cdd6f4; text-align: left; padding: 5px;">확인 문구</div>
+<div style="display: flex; gap: 12px; justify-content: center;">
+<button onclick="closeConfirmModal(true)" style="background-color: #a6e3a1; color: #11111b; padding: 10px 20px; flex: 1;">확인</button>
+<button onclick="closeConfirmModal(false)" style="background-color: #45475a; color: #cdd6f4; padding: 10px 20px; flex: 1;">취소</button>
+</div>
+</div>
+</div>
+
+<script>
+// 🔒 [보안 설정] 사회자 비밀번호 해시값 (mafia0987)
+const MASTER_HASH = "6ec18fede8426832e9529f0b2e4c093d056c501745873ce89698219e5b1f3072";
+
+const firebaseConfig = {
+apiKey: "AIzaSyClYNfv5gT-tM1NwznAEcAW7mnl-GFRANw",
+authDomain: "offlinemafia-project.firebaseapp.com",
+projectId: "offlinemafia-project",
+storageBucket: "offlinemafia-project.firebasestorage.app",
+messagingSenderId: "874702143911",
+appId: "1:874702143911:web:ec59ecb67aeb8e859df682",
+databaseURL: "https://offlinemafia-project-default-rtdb.firebaseio.com"
+};
+
+let db = null; let roomRef = null; let isFirebaseConfigured = false;
+
+if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+firebase.initializeApp(firebaseConfig);
+db = firebase.database(); roomRef = db.ref("rooms/room123");
+isFirebaseConfigured = true;
+}
+
+function customAlert(msg) {
+document.getElementById("alert-modal-body").innerText = msg;
+document.getElementById("alert-modal").style.display = "flex";
+}
+function closeAlertModal() {
+document.getElementById("alert-modal").style.display = "none";
+}
+
+let confirmCallback = null;
+function customConfirm(msg, callback) {
+document.getElementById("confirm-modal-body").innerText = msg;
+document.getElementById("confirm-modal").style.display = "flex";
+confirmCallback = callback;
+}
+function closeConfirmModal(result) {
+document.getElementById("confirm-modal").style.display = "none";
+if (result && confirmCallback) confirmCallback();
+confirmCallback = null;
+}
+
+const roleDataMapping = {
+"마피아": { 
+skill: "사격 (합의 사격)", 
+desc: "■ 능력 : 사격 (합의 사격)\n■ 세부 규칙 :\n밤마다 마피아 팀원들과 논의하여 목표물 한 명을 조준하고 처단합니다. 생존해 있는 조직원이 여러 명인 경우, 합의 사격을 원칙으로 하여 최종 타겟을 처단하게 됩니다. 밤 공격에 방어 수단(의사 등)이 제공되지 않은 대상은 다음날 아침 사상자로 처리됩니다." 
+},
+"해커": { 
+skill: "해킹 (정보 확인)", 
+desc: "■ 능력 : 해킹 (정보 확인)\n■ 세부 규칙 :\n밤마다 지정한 플레이어의 스마트폰 신호를 우회 해킹하여, 해당 플레이어의 정확한 '고유 직업 명칭'과 '진영'을 직접 확인해 낼 수 있습니다. 단, 마피아 진영과의 직접적인 접선 통로는 제공되지 않으며, 마피아의 총격에 노출될 수 있는 위험을 안고 시도해야 합니다." 
+},
+"마담": { 
+skill: "유혹 (능력 봉쇄)", 
+desc: "■ 능력 : 유혹 (능력 봉쇄)\n■ 세부 규칙 :\n밤마다 한 명을 선택해 유혹의 덫을 놓습니다. 마담에게 지목당한 플레이어는 당일 밤에 수행하려던 모든 특수 능력(수사, 치료, 조사 등)이 강제로 차단 및 봉쇄되어 불발 처리됩니다. 밤에 마피아에게 조준당할 경우 합류 및 접선이 자동으로 성사됩니다." 
+},
+"사기꾼": { 
+skill: "사기 (거짓 특종 전파)", 
+desc: "■ 능력 : 사기 (거짓 특종 전파)\n■ 세부 규칙 :\n첫날밤을 제외하고, 게임 중 단 1회만 밤에 작동시킬 수 있습니다. 사회자가 능력을 승인하여 기록하면 사기꾼 플레이어 본인의 스마트폰 화면에 [경찰, 의사, 탐정, 시민, 기자] 중 하나를 고를 수 있는 전용 팝업창이 연동 생성되며, 하나를 전파 선택 시 무슨 거짓 특종이 살포될지 사회자 로그 시스템에 은밀히 통보됩니다." 
+},
+"스파이": { 
+skill: "첩보 (직업 파악)", 
+desc: "■ 능력 : 첩보 (직업 파악)\n■ 세부 규칙 :\n밤마다 한 명을 지목하여 대상이 소속된 본래 '고유 직업 명칭'을 은밀하게 조사하여 알아냅니다. 직업 자체는 사회자가 대시보드 및 내부 i버튼 시스템을 확인한 후 적절한 타이밍에 직접 수동 공개합니다. 만약 밤에 조사한 대상이 '마피아'일 경우, 그 즉시 마피아 조직과의 비밀 연합 채널이 개통되어 완벽한 접선 상태로 전환됩니다." 
+},
+"프로파일러": { 
+skill: "심리분석 (스킬 무효화)", 
+desc: "■ 능력 : 심리분석 (스킬 무효화)\n■ 세부 규칙 :\n밤마다 용의자 한 명을 선택한 뒤, 해당 용의자가 오늘 밤 '몇 번 플레이어에게 능력을 사용할 것인가'를 정확하게 추론하여 시스템에 입력합니다. 예측이 완전히 적중했을 경우, 해당 용의자의 밤 기술 작동을 완벽히 파쇄하고 무효화시키는 심리적 억제 효과를 발휘합니다." 
+},
+"경찰대생": { 
+skill: "순찰 (수사권 승계)", 
+desc: "■ 능력 : 순찰 (수사권 승계)\n■ 세부 규칙 :\n초기에는 일반 시민과 다름없이 밤 능력이 활성화되지 않으나, 시민 팀의 핵심 기둥인 '경찰'이 밤의 습격이나 낮의 투표로 인해 최종 사망하게 되는 순간 수사권이 자동으로 승계됩니다. 경찰 사망 다음날 밤부터 정식 수사권이 활성화되어, 밤마다 한 명을 순찰 및 조사하여 마피아 팀의 여부를 판독해 낼 수 있게 됩니다." 
+},
+"시민": { 
+skill: "추리 (투표권)", 
+desc: "■ 능력 : 추리 (투표권)\n■ 세부 규칙 :\n밤에 활성화되는 별도의 액티브 특수 스킬은 전혀 보유하고 있지 않습니다. 그러나 오직 낮 단계에서 발언권과 투표권 행사를 통해, 오프라인 현장 플레이어들의 모순점과 미묘한 심리 변화를 추리해 마피아 진영을 솎아내야 하는 시민 진영의 굳건한 기초 기반 세력입니다." 
+},
+"국회의원": { 
+skill: "공권력 (다수표 & 방탄)", 
+desc: "■ 능력 : 공권력 (다수표 & 방탄)\n■ 세부 규칙 :\n밤에는 별도의 행동 능력이 주어지지 않습니다. 다만 낮의 재판 투표 결과 최종 사형 선고를 받더라도, 면책 특권 및 공권력이 발동되어 죽지 않고 생존합니다. 또한, 표결의 영향력을 대폭 증폭시킬 수 있는 고유 표를 가집니다. 게임 시작 인원 설계 규칙에 의거하여 참여 인원이 15명 미만일 경우 2표, 15명 이상일 경우 3표의 다수 투표 가중치 권력을 기본적으로 행사합니다." 
+},
+"기자": { 
+skill: "특종 보도", 
+desc: "■ 능력 : 특종 보도\n■ 세부 규칙 :\n첫날밤이 지나간 이후부터 게임 중 단 1회에 한하여 밤에 조사를 수행할 수 있습니다. 자신이 전날 밤 미리 취재 완료해 둔 특정 플레이어 한 명을 지목하여, 그의 실제 소속 직업을 전체 중계 화면 및 시스템에 강제로 인쇄·폭로하는 강력한 언론 특종 보도를 단행합니다. (게임 중 단 1회 소진 시 영구 비활성화)" 
+},
+"은퇴한킬러": { 
+skill: "킬러 본능 (암살)", 
+desc: "■ 능력 : 킬러 본능 (암살)\n■ 세부 규칙 :\n초기에는 무기로 무장하지 않은 은퇴 상태입니다. 본인의 플레이어 번호 바로 앞 번호(Pn-1) 혹은 바로 뒷 번호(Pn+1) 중 한 명이라도 사망 판정을 받게 되면 킬러 본능이 영구 각성합니다. 각성 완료된 밤부터 총 2회에 걸쳐 방어선을 뚫고 대상을 암살할 수 있는 야간 처단권을 얻어 스킬 입력이 개방됩니다." 
+},
+"의사": { 
+skill: "치료 (처단 방어)", 
+desc: "■ 능력 : 치료 (처단 방어)\n■ 세부 규칙 :\n밤마다 한 명을 선택해 긴급 수술 및 의학적 치료 버프를 부여합니다. 치료를 받은 플레이어는 당일 밤 마피아나 연쇄살인마로부터 사격 및 살해 위협을 받더라도 사상자 명단에서 제외되어 안전하게 생존합니다. 단, 자기 자신을 치료하는 자가 치료 행위는 시스템상 불가능합니다." 
+},
+"명의": { 
+skill: "기적 (광역 치료)", 
+desc: "■ 능력 : 기적 (광역 치료)\n■ 세부 규칙 :\n의사보다 진보된 광역 치료 기술을 탑재하고 있습니다. 밤에 지목한 타겟 플레이어 본인뿐만 아니라, 원형 테이블 상 그 타겟의 '좌측 이웃'과 '우측 이웃' 범위까지 치료 망을 넓혀 총 2인 이상이 동시에 야간 공격을 당하더라도 기적적으로 동시 소생시킬 수 있습니다. (자신 치료는 불가)" 
+},
+"비리판사": { 
+skill: "절대 판결", 
+desc: "■ 능력 : 절대 판결\n■ 세부 규칙 :\n밤에는 별도의 특수 행동 명령이 비활성화됩니다. 다만 최후의 변론 이후 펼쳐지는 2차 찬반 표결(심판)에서 대중의 중론을 완전히 짓밟는 절대적 재판권을 행사합니다. 다수의 플레이어들이 '살린다' 혹은 '죽인다'로 몰표를 던지더라도, 비리판사가 본인의 기기에서 최종 입력한 단 한 단독 판정(SAVE/KILL) 결과 원안대로 재판 결론이 즉시 강제 집행됩니다." 
+},
+"경찰": { 
+skill: "수사 (마피아 검거)", 
+desc: "■ 능력 : 수사 (마피아 검거)\n■ 세부 규칙 :\n시민 팀의 핵심 탐지 보직입니다. 밤이 찾아올 때마다 의심스러운 좌석 번호의 플레이어 한 명을 검문 수사할 수 있습니다. 수사 결과가 확정되면 해당 용의자가 '마피아 팀 조직원'인지, 아니면 조직원이 아닌지(시민/중립 등)에 대한 명확한 O/X 피드백 단서를 실시간 수집합니다." 
+},
+"사립탐정": { 
+skill: "추리 (행적 추적)", 
+desc: "■ 능력 : 추리 (행적 추적)\n■ 세부 규칙 :\n밤마다 용의자를 미행하여 직업 자체를 알아내지는 못하지만, 그 용의자가 오늘 밤 '몇 번 좌석을 향해 특수 능력을 조준하여 뻗어나갔는지' 그 구체적인 행적선의 경로를 추적하여 육안으로 관찰합니다. 스킬 대상자가 밤에 아무 일도 안 했다면 무동작 상태 정보 역시 고스란히 포착합니다." 
+},
+"테러리스트": { 
+skill: "자폭 (동반 사망)", 
+desc: "■ 능력 : 자폭 (동반 사망)\n■ 세부 규칙 :\n낮 투표 재판으로 처형당해 죽거나, 밤에 마피아 등의 공격을 받아 급습을 당하는 순간 심장에 장착된 폭탄을 행사의 방해 요소에게 격발시킵니다. 자신이 사망 판정을 받는 시점에 시스템 상에서 자신이 미리 타겟으로 고정해 두었던 플레이어 한 명을 강제로 껴안아 동반 자폭 사상자로 소멸시킵니다." 
+},
+"장의사": { 
+skill: "부검 (사망자 직업 파악)", 
+desc: "■ 능력 : 부검 (사망자 직업 파악)\n■ 세부 규칙 :\n밤마다 사망자 한 명을 지목하여 대상이 소속된 본래 '고유 직업 명칭'을 은밀하게 조사하여 알아냅니다. 직업 자체는 사회자가 대시보드 및 내부 i버튼 시스템을 확인한 후 적절한 타이밍에 직접 수동 공개합니다." 
+},
+"연쇄살인마": { 
+skill: "살인 (단독 살해)", 
+desc: "■ 능력 : 살인 (단독 살해)\n■ 세부 규칙 :\n마피아와 시민 진영 양쪽 모두를 전멸시켜야 단독 승리할 수 있는 고독한 중립 진영의 처단자입니다. 마피아 조직의 사격 오더와는 완전히 별개로, 밤마다 독자적인 칼날을 휘둘러 매 회차 밤마다 1인을 확정 살해할 수 있습니다. 경찰에게 수사당할 시 즉시 '살인마' 정체가 검거되니 주의하십시오." 
+},
+"도플갱어": { 
+skill: "클론화 (직업 복제)", 
+desc: "■ 능력 : 클론화 (직업 복제)\n■ 세부 규칙 :\n첫날밤(1일차 밤)에만 단 한 번 작동하는 고유 변이 스킬입니다. 테이블 위에 배치된 임의의 플레이어 한 명을 세포 복제 타겟으로 지정합니다. 타겟 지정 완료 후 다음날 아침(2일차 낮)이 밝아오는 순간, 도플갱어는 완전히 소멸하며 자신이 지목했던 대상의 직업 능력, 소속 진영, 상세 설명을 100% 그대로 복사하여 제2의 동일 직업 플레이어로 새롭게 완벽 각성 변신합니다." 
+}
+};
+
+const availableRoles = {
+"마피아 팀": ["마피아", "해커", "마담", "사기꾼", "스파이"],
+"시민 팀": ["프로파일러", "경찰대생", "시민", "국회의원", "기자", "은퇴한킬러", "의사", "명의", "비리판사", "경찰", "사립탐정", "테러리스트", "장의사"],
+"중립 팀": ["연쇄살인마", "도플갱어"]
+};
+
+class Role {
+constructor(name, faction, skillName, description) {
+this.name = name; this.faction = faction; this.skillName = skillName; this.description = description; 
+}
+}
+
+class Player {
+constructor(seatNumber) {
+this.seatNumber = seatNumber; this.playerName = ""; this.role = null; this.isAlive = true; this.x = 0; this.y = 0;
+this.isContacted = false; this.isSkillUsed = false; this.isSwindlerPending = false; 
+}
+assignRole(role) { this.role = role; }
+}
+
+let players = []; let joinedCount = 0; let selectedPlayerId = null; let gameState = "MAIN"; 
+let currentPhase = "DAY"; let dayCount = 1; let skillActor = null; let skillTarget = null; let nightActionLog = [];
+let voteState = "NONE"; let voteTimerInterval = null; let activeVotes = {}; 
+let judgmentVotes = { kill: 0, save: 0, judgeVote: null }; let judgmentTarget = null; let simulatorPlayerId = 1;
+let historyLogs = []; let selectedHistoryView = "CURRENT"; 
+let isPlayerMode = false;
+let masterInitialized = false;
+
+// 🔒 [보안 함수] 단방향 해시 스트링 반환 (SHA-256)
+async function calculateSHA256(string) {
+const msgBuffer = new TextEncoder().encode(string);
+const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+const hashArray = Array.from(new Uint8Array(hashBuffer));
+return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 🔒 [보안 함수] 패스워드 검증 처리
+async function checkMasterAuth() {
+const inputVal = document.getElementById("master-password-input").value;
+const inputHash = await calculateSHA256(inputVal);
+
+if (inputHash === MASTER_HASH) {
+masterInitialized = true;
+if (!gameState || gameState === "") gameState = "MAIN";
+updateLocalUI();
+} else {
+alert("❌ 잘못된 인증키입니다. 사회자 권한을 획득할 수 없습니다.");
+document.getElementById("master-password-input").value = "";
+}
+}
+
+function submitPlayerJoin() {
+const nameInput = document.getElementById("player-nickname");
+const nickname = nameInput.value.trim();
+
+if (!nickname) return customAlert("사용할 닉네임을 입력해 주세요.");
+if (players.length === 0) return customAlert("현재 입장 가능한 방이 활성화되지 않았습니다.");
+
+const firstEmptySlot = players.find(p => p.playerName === "");
+if (!firstEmptySlot) {
+return customAlert("❌ 이미 게임 정원이 가득 찬 방입니다.");
+}
+
+firstEmptySlot.playerName = nickname;
+joinedCount = players.filter(p => p.playerName !== "").length;
+
+localStorage.setItem("mySeatNumber", firstEmptySlot.seatNumber);
+broadcastState();
+}
+
+function broadcastState() {
+if (!isFirebaseConfigured) { updateLocalUI(); return; }
+roomRef.set({
+gameState: gameState, currentPhase: currentPhase, dayCount: dayCount, voteState: voteState,
+joinedCount: joinedCount, selectedPlayerId: selectedPlayerId || null, activeVotes: activeVotes || {},
+judgmentVotes: judgmentVotes || { kill: 0, save: 0, judgeVote: null },
+judgmentTargetSeat: judgmentTarget ? judgmentTarget.seatNumber : null, nightActionLog: nightActionLog || [],
+selectedHistoryView: selectedHistoryView, historyLogs: historyLogs || [],
+players: players.map(p => ({
+seatNumber: p.seatNumber, playerName: p.playerName, isAlive: p.isAlive, x: p.x, y: p.y,
+isContacted: p.isContacted, isSkillUsed: p.isSkillUsed, isSwindlerPending: p.isSwindlerPending || false,
+role: p.role ? { name: p.role.name, faction: p.role.faction, skillName: p.role.skillName, description: p.role.description } : null
+}))
+});
+updateLocalUI(); 
+}
+
+if (isFirebaseConfigured) {
+roomRef.on('value', (snapshot) => {
+const data = snapshot.val(); 
+if (!data) {
+if(!isPlayerMode && masterInitialized) gameState = "MAIN";
+updateLocalUI();
+return;
+}
+
+gameState = data.gameState || "MAIN"; currentPhase = data.currentPhase || "DAY"; dayCount = data.dayCount || 1;
+voteState = data.voteState || "NONE"; joinedCount = data.joinedCount || 0; selectedPlayerId = data.selectedPlayerId || null;
+activeVotes = data.activeVotes || {}; judgmentVotes = data.judgmentVotes || { kill: 0, save: 0, judgeVote: null };
+nightActionLog = data.nightActionLog || [];
+selectedHistoryView = data.selectedHistoryView || "CURRENT";
+historyLogs = data.historyLogs || [];
+if (data.players) {
+players = data.players.map(pData => {
+let p = new Player(pData.seatNumber); p.playerName = pData.playerName; p.isAlive = pData.isAlive; p.x = pData.x; p.y = pData.y;
+p.isContacted = pData.isContacted || false; p.isSkillUsed = pData.isSkillUsed || false;
+p.isSwindlerPending = pData.isSwindlerPending || false;
+if (pData.role) p.role = new Role(pData.role.name, pData.role.faction, pData.role.skillName, pData.role.description);
+return p;
+});
+} else {
+players = [];
+}
+judgmentTarget = data.judgmentTargetSeat ? (players.find(p => p.seatNumber === data.judgmentTargetSeat) || null) : null;
+
+updateLocalUI();
+});
+}
+
+function updateLocalUI() {
+if (isPlayerMode) {
+document.getElementById("master-lock-screen").style.display = "none";
+document.getElementById("main-screen").style.display = "none";
+document.getElementById("game-workspace").style.display = "none";
+
+const mySeat = localStorage.getItem("mySeatNumber");
+const matchedPlayer = mySeat ? players.find(p => p.seatNumber == mySeat && p.playerName !== "") : null;
+
+if (matchedPlayer) {
+document.getElementById("player-join-screen").style.display = "none";
+const sim = document.getElementById("smartphone-simulator");
+sim.style.display = "flex";
+sim.style.position = "fixed";
+sim.style.top = "0"; sim.style.left = "0";
+sim.style.width = "100vw"; sim.style.height = "100vh";
+sim.style.border = "none"; sim.style.borderRadius = "0"; sim.style.boxShadow = "none";
+syncSmartphoneView();
+} else {
+document.getElementById("smartphone-simulator").style.display = "none";
+document.getElementById("player-join-screen").style.display = "flex";
+
+if (players.length === 0) {
+document.getElementById("player-join-status").innerText = "사회자가 아직 방을 개설하지 않았습니다.\n사회자가 세션을 오픈할 때까지 기다려 주세요.";
+document.getElementById("player-nickname").style.display = "none";
+document.getElementById("player-join-btn").style.display = "none";
+} else {
+const hasEmptySlot = players.some(p => p.playerName === "");
+if (!hasEmptySlot) {
+document.getElementById("player-join-status").innerText = "❌ 게임 정원이 가득 차서 더 이상 입장할 수 없습니다.";
+document.getElementById("player-nickname").style.display = "none";
+document.getElementById("player-join-btn").style.display = "none";
+} else {
+document.getElementById("player-join-status").innerText = "대기실이 활성화되었습니다!\n게임에 사용할 닉네임을 입력하고 아래 단추를 누르세요.";
+document.getElementById("player-nickname").style.display = "block";
+document.getElementById("player-join-btn").style.display = "block";
+}
+}
+}
+return;
+}
+
+// === [안전한 디스플레이 관리 (중첩/가려짐 현상 차단)] ===
+if (!masterInitialized) {
+document.getElementById("master-lock-screen").style.display = "flex";
+document.getElementById("main-screen").style.display = "none";
+document.getElementById("game-workspace").style.display = "none";
+document.getElementById("player-join-screen").style.display = "none";
+return;
+}
+
+document.getElementById("master-lock-screen").style.display = "none";
+document.getElementById("player-join-screen").style.display = "none"; // 모바일 가입창 무조건 숨김
+
+if (gameState === "MAIN") {
+document.getElementById("main-screen").style.display = "flex";
+document.getElementById("game-workspace").style.display = "none";
+return;
+}
+
+document.getElementById("main-screen").style.display = "none";
+document.getElementById("game-workspace").style.display = "flex";
+
+if (gameState === "LOBBY") {
+if (players.length === 0) {
+document.getElementById("setup-controls").style.display = "block";
+document.getElementById("lobby-panel").style.display = "none";
+} else {
+document.getElementById("setup-controls").style.display = "none";
+document.getElementById("lobby-panel").style.display = "block";
+}
+document.getElementById("role-picker-panel").style.display = "none";
+document.getElementById("play-dashboard-panel").style.display = "none";
+document.getElementById("master-timeline-box").style.display = "none";
+updateLobbyUI();
+} 
+else if (gameState === "SETUP") {
+document.getElementById("setup-controls").style.display = "none";
+document.getElementById("lobby-panel").style.display = "none";
+document.getElementById("role-picker-panel").style.display = "block";
+document.getElementById("play-dashboard-panel").style.display = "none";
+document.getElementById("master-timeline-box").style.display = "none";
+renderSeats();
+} 
+else if (gameState === "PLAY") {
+document.getElementById("setup-controls").style.display = "none";
+document.getElementById("lobby-panel").style.display = "none";
+document.getElementById("role-picker-panel").style.display = "none";
+document.getElementById("play-dashboard-panel").style.display = "block";
+document.getElementById("master-timeline-box").style.display = "flex";
+updatePhaseUI(); renderTimelineButtons(); renderSeats(); printLog();
+rebuildSimSelector();
+}
+syncSmartphoneView();
+}
+
+function enterSetup() {
+gameState = "LOBBY"; players = []; joinedCount = 0; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; activeVotes = {};
+judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null; nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT";
+document.getElementById("status-container").innerHTML = "초기 게임 인원을 설정하고 QR 대기실을 생성하세요.";
+broadcastState();
+}
+
+function openQRLobby() {
+const playerCount = parseInt(document.getElementById("playerCount").value);
+if (playerCount < 4 || playerCount > 30) return customAlert("4~30명 사이로 입력해주세요.");
+
+players = []; joinedCount = 0; const radius = 225;
+for (let i = 1; i <= playerCount; i++) {
+let p = new Player(i); const angle = ((i - 1) / playerCount) * (2 * Math.PI) - (Math.PI / 2);
+p.x = 275 + radius * Math.cos(angle); p.y = 275 + radius * Math.sin(angle); players.push(p);
+}
+gameState = "LOBBY";
+document.getElementById("status-container").innerHTML = `⚙️ 인원 설정 완료: [총 ${playerCount}명 테이블 생성]<br>실시간 디바이스 연동 접속 대기 중...`;
+
+const playerJoinUrl = window.location.origin + window.location.pathname + "?mode=player";
+const qrImg = document.querySelector(".qr-placeholder img");
+if (qrImg) {
+qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playerJoinUrl)}`;
+}
+
+broadcastState();
+}
+
+function resetLobbyToSetup() {
+players = [];
+joinedCount = 0;
+document.getElementById("status-container").innerHTML = "초기 게임 인원을 설정하고 QR 대기실을 생성하세요.";
+broadcastState();
+}
+
+function triggerAbsoluteReset() {
+customConfirm("🚨 [서버 전체 초기화 경고]\n\n모든 플레이어 정보와 연결 기록을 삭제하고 메인 화면으로 되돌리겠습니까?", () => {
+gameState = "MAIN"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; joinedCount = 0; selectedPlayerId = null;
+players = []; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null;
+nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; skillActor = null; skillTarget = null;
+
+// UI 요소 전체 소거
+const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
+document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>우측에서 설정을 진행하세요</span>";
+document.getElementById("arrow-layer").innerHTML = "";
+document.getElementById("seats-layer").innerHTML = "";
+document.getElementById("lobby-player-list").innerHTML = "";
+document.getElementById("timeline-nights-container").innerHTML = "";
+document.getElementById("status-container").innerHTML = "방을 만들고 접속을 진행해 주세요.";
+document.getElementById("swindler-master-zone").style.display = "none";
+
+if (isFirebaseConfigured) {
+roomRef.set({
+gameState: "MAIN", currentPhase: "DAY", dayCount: 1, voteState: "NONE", joinedCount: 0,
+selectedPlayerId: null, activeVotes: {}, judgmentVotes: { kill: 0, save: 0, judgeVote: null },
+judgmentTargetSeat: null, nightActionLog: [], selectedHistoryView: "CURRENT", historyLogs: [], players: []
+});
+}
+updateLocalUI();
+});
+}
+
+function simulatePlayerJoin() {
+if (players.length === 0) return customAlert("인원 설정이 먼저 진행되어야 합니다.");
+while (joinedCount < players.length) {
+players[joinedCount].playerName = "참가자" + (joinedCount + 1); joinedCount++;
+}
+broadcastState();
+}
+
+function updateLobbyUI() {
+const grid = document.getElementById("lobby-player-list"); grid.innerHTML = ""; if (players.length === 0) return; 
+for (let i = 0; i < players.length; i++) {
+let div = document.createElement("div");
+if (players[i].playerName !== "") {
+div.className = "joined-player"; div.innerText = `${i+1}번: ${players[i].playerName}`;
+} else {
+div.className = "waiting-player"; div.innerText = `${i+1}번: 대기중...`;
+}
+grid.appendChild(div);
+}
+const allJoined = players.every(p => p.playerName !== "");
+document.getElementById("lobby-next-btn").style.display = (allJoined && players.length > 0) ? "block" : "none";
+}
+
+function finishLobby() {
+gameState = "SETUP"; buildRolePickerButtons();
+document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
+broadcastState();
+}
+
+function triggerGameReset() {
+customConfirm("💥 정말 현재 설정된 배치를 초기화하고 직업 할당 단계(Setup)로만 한 단계 리셋하시겠습니까?", () => {
+gameState = "SETUP"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; skillActor = null; skillTarget = null;
+nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; judgmentTarget = null;
+
+players.forEach(p => {
+p.isAlive = true; p.isContacted = false; p.isSkillUsed = false; p.isSwindlerPending = false;
+});
+
+document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
+const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
+logAction("🔄 사회자가 판을 파기하고 [직업 재설정] 단계로 되돌렸습니다.", "#f38ba8");
+broadcastState();
+});
+}
+
+function buildRolePickerButtons() {
+const mapping = { "마피아 팀": "mafia-btns", "시민 팀": "citizen-btns", "중립 팀": "neutral-btns" };
+for (let id of Object.values(mapping)) document.getElementById(id).innerHTML = "";
+for (const [faction, roles] of Object.entries(availableRoles)) {
+const container = document.getElementById(mapping[faction]);
+roles.forEach(roleName => {
+const btn = document.createElement("button"); btn.className = "role-btn"; btn.innerText = roleName;
+btn.onclick = () => assignRoleToSelected(roleName, faction); container.appendChild(btn);
+});
+}
+}
+
+function handleSeatClick(seatNumber) {
+const clickedPlayer = players.find(p => p.seatNumber === seatNumber);
+if (gameState === "SETUP") {
+selectedPlayerId = seatNumber;
+document.getElementById("selected-player-text").innerText = `선택된 대상: P${seatNumber} [${clickedPlayer.playerName}]`;
+renderSeats();
+} 
+else if (gameState === "PLAY" && currentPhase === "DAY" && voteState === "NONE") {
+clickedPlayer.isAlive = !clickedPlayer.isAlive; broadcastState();
+}
+else if (gameState === "PLAY" && currentPhase === "NIGHT") {
+if (selectedHistoryView !== "CURRENT") {
+return customAlert("현재 복기 모드입니다. 실시간 수집을 원하시면 상단의 [현재] 단추를 누르세요.");
+}
+
+if (skillActor && skillActor.seatNumber === clickedPlayer.seatNumber) {
+skillActor = null; skillTarget = null;
+document.getElementById("skill-actor-view").innerText = "시전자: 선택 대기 중";
+document.getElementById("skill-name-view").innerText = "보유 스킬: -";
+document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
+document.getElementById("swindler-master-zone").style.display = "none";
+renderSeats(); return;
+}
+
+if (!skillActor) {
+if (clickedPlayer.role) {
+const name = clickedPlayer.role.name;
+if (name === "시민" || name === "국회의원" || name === "비리판사") {
+return customAlert(`🚫 ${name} 직업군은 밤에 발동할 수 있는 고유 능력이 배정되어 있지 않습니다.`);
+}
+if (dayCount === 1 && (name === "사기꾼" || name === "기자")) {
+return customAlert(`🚫 '${name}' 직업군은 규칙상 첫날밤(1일차 밤)에 고유 능력을 시전할 수 없습니다.`);
+}
+if (name === "기자" && clickedPlayer.isSkillUsed) {
+return customAlert(`🚫 기자는 이미 이번 게임에서 단 1회 제공되는 특종 보도 능력을 소진했습니다.`);
+}
+if (name === "사기꾼" && clickedPlayer.isSkillUsed) {
+return customAlert(`🚫 해당 사기꾼은 이미 이번 라운드 거짓특종 카드를 소진했습니다.`);
+}
+if (name === "경찰대생") {
+const isOriginalPoliceAlive = players.some(p => p.role && p.role.name === "경찰" && p.isAlive);
+if (isOriginalPoliceAlive) {
+return customAlert(`🚫 기존 '경찰'이 아직 생존해 있으므로 경찰대생은 수사권을 행사할 수 없습니다.`);
+}
+}
+if (name === "은퇴한킬러") {
+const total = players.length;
+const currentIdx = players.findIndex(p => p.seatNumber === clickedPlayer.seatNumber);
+const prevIdx = (currentIdx - 1 + total) % total;
+const nextIdx = (currentIdx + 1) % total;
+if (players[prevIdx].isAlive && players[nextIdx].isAlive) {
+return customAlert(`🚫 은퇴한 킬러 본능이 각성하지 않았습니다. (인접 전후방 생존 중)`);
+}
+}
+}
+
+skillActor = clickedPlayer;
+document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${skillActor.playerName})</strong>`;
+document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${skillActor.role ? skillActor.role.skillName : '-'} ]`;
+
+if (skillActor.role && skillActor.role.name === "사기꾼") {
+document.getElementById("swindler-master-zone").style.display = "block";
+document.getElementById("skill-target-view").innerText = "스킬 대상: [사기꾼 단독 전파 - 참가자 모바일 화면에서 선택 예정]";
+} else {
+document.getElementById("swindler-master-zone").style.display = "none";
+}
+} else if (!skillTarget) {
+if (skillActor.role && skillActor.role.name === "사기꾼") {
+if (clickedPlayer.role && (clickedPlayer.role.name === "시민" || clickedPlayer.role.name === "국회의원")) {
+return customAlert("🚫 해당 대상은 액티브 스킬이 없어 시전자로 전환할 수 없습니다.");
+}
+skillActor = clickedPlayer;
+document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${skillActor.playerName})</strong>`;
+document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${skillActor.role ? skillActor.role.skillName : '-'} ]`;
+document.getElementById("swindler-master-zone").style.display = "none";
+return;
+} 
+skillTarget = clickedPlayer;
+document.getElementById("skill-target-view").innerHTML = `스킬 대상: <strong>P${skillTarget.seatNumber} (${skillTarget.playerName})</strong>`;
+} else {
+if (clickedPlayer.role) {
+const name = clickedPlayer.role.name;
+if (name === "시민" || name === "국회의원" || name === "비리판사") {
+return customAlert(`🚫 ${name} 직업군은 밤에 능력이 존재하지 않습니다.`);
+}
+}
+skillActor = clickedPlayer; skillTarget = null;
+document.getElementById("skill-actor-view").innerHTML = `시전자: <strong>P${skillActor.seatNumber} (${clickedPlayer.playerName})</strong>`;
+document.getElementById("skill-name-view").innerText = `보유 스킬: [ ${clickedPlayer.role ? clickedPlayer.role.skillName : '-'} ]`;
+document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
+
+if (skillActor.role && skillActor.role.name === "사기꾼") {
+document.getElementById("swindler-master-zone").style.display = "block";
+document.getElementById("skill-target-view").innerText = "스킬 대상: [사기꾼 단독 전파 - 참가자 모바일 화면에서 선택 예정]";
+} else {
+document.getElementById("swindler-master-zone").style.display = "none";
+}
+}
+renderSeats();
+}
+}
+
+function assignRoleToSelected(roleName, faction) {
+if (selectedPlayerId === null) return customAlert("직업을 배정할 자리를 테이블 위에서 먼저 고르세요.");
+const player = players.find(p => p.seatNumber === selectedPlayerId);
+if (player) {
+const data = roleDataMapping[roleName] || { skill: "고유 능력", desc: "설명 없음" };
+player.assignRole(new Role(roleName, faction, data.skill, data.desc));
+}
+broadcastState();
+}
+
+function finalizeSetupAndStart() {
+const unassigned = players.filter(p => p.role === null);
+if (unassigned.length > 0) {
+customConfirm(`배정되지 않은 플레이어가 ${unassigned.length}명 있습니다. 전부 일반 '시민'으로 자동 배정할까요?`, () => {
+unassigned.forEach(p => p.assignRole(new Role("시민", "시민 팀", roleDataMapping["시민"].skill, roleDataMapping["시민"].desc)));
+executeGameStartAction();
+});
+} else {
+executeGameStartAction();
+}
+}
+
+function executeGameStartAction() {
+gameState = "PLAY"; currentPhase = "DAY"; voteState = "NONE"; dayCount = 1; historyLogs = []; selectedHistoryView = "CURRENT";
+customAlert("🎯 세팅 완료! 오프라인 중계 및 스마트폰 실시간 화면 연동 모드가 시작되었습니다.");
+broadcastState();
+}
+
+function startVotePhase(type) {
+if (voteState !== "NONE") return; voteState = type; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null };
+document.getElementById("timer-display").style.display = "block";
+document.getElementById("btn-vote-1").disabled = true; document.getElementById("btn-vote-2").disabled = true;
+
+let timeLeft = 10; document.getElementById("timer-display").innerText = `⏱ ${timeLeft}초 남음`;
+broadcastState();
+
+voteTimerInterval = setInterval(() => {
+timeLeft--; document.getElementById("timer-display").innerText = `⏱ ${timeLeft}초 남음`;
+if (timeLeft <= 0) { clearInterval(voteTimerInterval); endVotePhase(); }
+}, 1000);
+}
+
+function endVotePhase() {
+clearInterval(voteTimerInterval); document.getElementById("timer-display").style.display = "none";
+if (voteState === "SUSPECT") calculateSuspectVotes();
+else if (voteState === "JUDGMENT") calculateJudgmentVotes();
+voteState = "NONE"; activeVotes = {};
+document.getElementById("btn-vote-1").disabled = false; document.getElementById("arrow-layer").innerHTML = ""; 
+broadcastState();
+}
+
+function calculateSuspectVotes() {
+let tally = {}; players.forEach(p => tally[p.seatNumber] = 0);
+for (const [voterSeat, targetSeat] of Object.entries(activeVotes)) {
+const voter = players.find(p => p.seatNumber == voterSeat);
+if (voter) {
+// 국회의원 로직 변경: 15명 미만 2표 / 15명 이상 3표
+let weight = 1;
+if (voter.role && voter.role.name === "국회의원") {
+weight = players.length < 15 ? 2 : 3;
+}
+tally[targetSeat] += weight;
+}
+}
+let maxVotes = 0; let suspectSeats = [];
+for (const [seat, votes] of Object.entries(tally)) {
+if (votes > maxVotes) { 
+maxVotes = votes; 
+suspectSeats = [seat]; 
+} else if (votes === maxVotes && votes > 0) { 
+suspectSeats.push(seat); 
+}
+}
+
+if (maxVotes === 0 || suspectSeats.length > 1) {
+logAction(`⚖️ <strong>1차 투표 결과:</strong> 부결 (동률 또는 무투표). 재판 없이 다음 단계로 진행합니다.`, "#cba6f7");
+judgmentTarget = null; document.getElementById("btn-vote-2").disabled = true;
+} else {
+judgmentTarget = players.find(p => p.seatNumber == suspectSeats[0]);
+logAction(`⚖️ <strong>1차 투표 결과:</strong> P${judgmentTarget.seatNumber}(${judgmentTarget.playerName}) 최다 지목 득표 (${maxVotes}표)`, "#f38ba8");
+document.getElementById("btn-vote-2").disabled = false;
+customAlert(`[마스터 가이드 브리핑 멘트]\n\n"P${judgmentTarget.seatNumber}번 [${judgmentTarget.playerName}]님은 최후의 변론을 시작해 주세요."\n\n변론이 완료되면 '2차 투표 시작' 버튼을 눌러 찬반 심판을 진행하십시오.`);
+}
+}
+
+function calculateJudgmentVotes() {
+if (!judgmentTarget) return;
+let result = "";
+if (judgmentVotes.judgeVote === "KILL") {
+result = "사형 (비리판사의 절대 권한 발동)"; judgmentTarget.isAlive = false;
+} else if (judgmentVotes.judgeVote === "SAVE") {
+result = "방면 (비리판사의 절대 권한 발동)";
+} else {
+if (judgmentVotes.kill > judgmentVotes.save) {
+result = "최종 처형 사형"; judgmentTarget.isAlive = false;
+} else {
+result = "최종 생존 방면 (동률 부결 또는 찬성 부족)";
+}
+}
+logAction(`⚖️ <strong>2차 심판 결과:</strong> P${judgmentTarget.seatNumber}[${judgmentTarget.playerName}] ➔ ${result} (찬성:${judgmentVotes.kill} / 반대:${judgmentVotes.save})`, "#f38ba8");
+judgmentTarget = null;
+}
+
+function toggleGamePhase() {
+if (currentPhase === "DAY") { 
+currentPhase = "NIGHT"; 
+selectedHistoryView = "CURRENT"; 
+} 
+else { 
+const compressedActions = nightActionLog.map(act => ({
+actor: { seatNumber: act.actor.seatNumber, playerName: act.actor.playerName, x: act.actor.x, y: act.actor.y, role: act.actor.role ? { name: act.actor.role.name, faction: act.actor.role.faction } : null },
+target: { seatNumber: act.target.seatNumber, playerName: act.target.playerName, x: act.target.x, y: act.target.y }
+}));
+
+historyLogs.push({ day: dayCount, actions: compressedActions });
+
+if (dayCount === 1) {
+nightActionLog.forEach(action => {
+const actorPlayer = players.find(p => p.seatNumber === action.actor.seatNumber);
+if (actorPlayer && actorPlayer.role && actorPlayer.role.name === "도플갱어") {
+if (action.target.seatNumber === 0) return; 
+const targetPlayer = players.find(p => p.seatNumber === action.target.seatNumber);
+if (targetPlayer && targetPlayer.role) {
+actorPlayer.role = new Role(targetPlayer.role.name, targetPlayer.role.faction, targetPlayer.role.skillName, targetPlayer.role.description);
+actorPlayer.isContacted = targetPlayer.isContacted;
+logAction(`🔮 <strong>[도플갱어 복제 각성]</strong> P${actorPlayer.seatNumber}번이 P${targetPlayer.seatNumber}번의 [${targetPlayer.role.name}] 신분으로 완벽히 변신했습니다!`, "#50fa7b");
+}
+}
+});
+}
+
+players.forEach(p => p.isSwindlerPending = false);
+currentPhase = "DAY"; dayCount++; nightActionLog = []; 
+}
+skillActor = null; skillTarget = null;
+document.getElementById("skill-actor-view").innerText = "시전자: 선택 대기 중";
+document.getElementById("skill-target-view").innerText = "스킬 대상: 선택 대기 중";
+document.getElementById("swindler-master-zone").style.display = "none";
+broadcastState();
+}
+
+function switchTimelineView(view) {
+selectedHistoryView = view; broadcastState();
+}
+
+function renderTimelineButtons() {
+const container = document.getElementById("timeline-nights-container"); container.innerHTML = "";
+historyLogs.forEach(h => {
+const btn = document.createElement("button"); btn.className = "timeline-btn";
+if (selectedHistoryView === h.day) {
+btn.style.backgroundColor = "#f9e2af"; btn.style.color = "#11111b";
+} else {
+btn.style.backgroundColor = "#313244"; btn.style.color = "#cdd6f4";
+}
+btn.innerText = `🌙 ${h.day}일차 밤`; btn.onclick = () => switchTimelineView(h.day);
+container.appendChild(btn);
+});
+
+const curBtn = document.getElementById("btn-timeline-current");
+if (selectedHistoryView === "CURRENT") {
+curBtn.style.backgroundColor = "#89b4fa"; curBtn.style.color = "#11111b";
+} else {
+curBtn.style.backgroundColor = "#313244"; curBtn.style.color = "#cdd6f4";
+}
+}
+
+function updatePhaseUI() {
+const tc = document.getElementById("table-container"), cd = document.getElementById("center-display");
+const pt = document.getElementById("current-phase-title"), tb = document.getElementById("phase-toggle-btn");
+const nb = document.getElementById("night-menu-box"), db = document.getElementById("day-menu-box");
+
+if (currentPhase === "NIGHT") {
+tc.classList.add("night-theme");
+cd.innerHTML = `<span style='color:#f9e2af; font-size:22px;'>🌙 밤 단계</span><br><span style='font-size:12px;'>${dayCount}일차 오더 수집</span>`;
+pt.innerText = `${dayCount}일차 밤 (스킬 입력중)`; pt.style.borderLeftColor = "#f9e2af";
+tb.innerText = "낮 단계로 전환 ☀️"; nb.style.display = "block"; db.style.display = "none";
+} else {
+tc.classList.remove("night-theme");
+cd.innerHTML = `<span style='color:#89b4fa; font-size:22px;'>☀️ 낮 단계</span><br><span style='font-size:12px;'>${dayCount}일차 브리핑</span>`;
+pt.innerText = `${dayCount}일차 낮`; pt.style.borderLeftColor = "#89b4fa";
+tb.innerText = "밤 단계로 전환 🌙"; nb.style.display = "none"; db.style.display = "block";
+}
+}
+
+function executeNightSkill() {
+if (!skillActor) return customAlert("스킬을 사용할 시전자를 테이블 위에서 먼저 클릭해 주세요.");
+
+if (skillActor.role && skillActor.role.name === "사기꾼") {
+if (skillActor.isSkillUsed) return customAlert("해당 사기꾼은 이미 이번 게임에서 스킬을 소진했습니다.");
+
+skillActor.isSwindlerPending = true; 
+logAction(`🎭 <strong>[원격 요청 전송]</strong> 사기꾼(P${skillActor.seatNumber}) 기기로 거짓 특종 생성 전용 팝업 패널을 전송했습니다.`, "#cba6f7");
+customAlert(`사기꾼(P${skillActor.seatNumber})의 스마트폰 화면에 직업 선택 패널이 활성화되었습니다.`);
+
+skillActor = null; skillTarget = null; broadcastState(); return;
+}
+
+if (!skillTarget) return customAlert("스킬을 적용할 대상 플레이어를 찍어주세요.");
+if (skillActor.role && skillActor.role.name === "기자") skillActor.isSkillUsed = true;
+
+if (skillActor.role && skillActor.role.name === "스파이" && skillTarget.role && skillTarget.role.name === "마피아") {
+skillActor.isContacted = true;
+logAction(`📢 <strong>[접선 완료]</strong> 스파이(P${skillActor.seatNumber})가 마피아(P${skillTarget.seatNumber})와 연합되었습니다!`, "#ff5555");
+}
+if (skillActor.role && skillActor.role.name === "마담" && skillTarget.role && skillTarget.role.name === "마피아") {
+skillActor.isContacted = true;
+logAction(`📢 <strong>[접선 완료]</strong> 마담(P${skillActor.seatNumber})이 마피아(P${skillTarget.seatNumber})와 연합되었습니다!`, "#ff5555");
+}
+
+nightActionLog.push({ actor: skillActor, target: skillTarget });
+logAction(`🌟 <strong>[밤 ${dayCount}일차]</strong> P${skillActor.seatNumber}(${skillActor.playerName}) ➔ P${skillTarget.seatNumber} <strong>[${skillActor.role.skillName}]</strong>`);
+
+if (skillActor.role.name === "해커") {
+const info = skillTarget.role ? `${skillTarget.role.name} (${skillTarget.role.faction})` : '시민';
+customAlert(`💻 [해커 정보 탐지 패널]\n\n지목한 플레이어: ${skillTarget.seatNumber}번 [${skillTarget.playerName}]\n확인된 신분 직업: ${info}`);
+}
+if (skillActor.role.name === "스파이") {
+const trueRole = skillTarget.role ? skillTarget.role.name : "시민";
+customAlert(`🕵️‍♂️ [스파이 첩보 알림]\n\n지목한 플레이어: P${skillTarget.seatNumber}번 [${skillTarget.playerName}]\n🎯 실제 정밀 직업: [ ${trueRole} ]`);
+}
+
+skillActor = null; skillTarget = null; broadcastState();
+}
+
+function executeMafiaConsensus() {
+if (selectedHistoryView !== "CURRENT") return;
+const target = skillTarget || skillActor;
+if (!target) return customAlert("사격 조준선을 보낼 타겟 대상을 1명 골라주세요.");
+const mafias = players.filter(p => p.isAlive && p.role && p.role.name === "마피아");
+if (mafias.length === 0) return customAlert("현재 살아있는 마피아 조직원이 없습니다.");
+
+if (target.role && target.role.faction === "마피아 팀" && target.role.name !== "마피아") {
+target.isContacted = true;
+logAction(`📢 <strong>[접선 완료]</strong> 마피아 사격 오더가 아군인 ${target.role.name}(P${target.seatNumber})에게 연결되었습니다!`, "#ff5555");
+}
+
+logAction(`🩸 <strong>[밤 ${dayCount}일차] 마피아 사격:</strong> 조직 연합 ➔ P${target.seatNumber}번 조준`, "#ff5555");
+mafias.forEach(m => nightActionLog.push({ actor: m, target: target }));
+skillActor = null; skillTarget = null; broadcastState();
+}
+
+function logAction(html, color = "#f9e2af") {
+const alc = document.getElementById("action-log-list"); if (!alc) return;
+const entry = document.createElement("div"); entry.className = "night-log-entry";
+entry.style.borderLeftColor = color; entry.style.color = color; entry.innerHTML = html;
+alc.insertBefore(entry, alc.firstChild);
+}
+
+function renderSeats() {
+const sl = document.getElementById("seats-layer"); sl.innerHTML = ""; 
+players.forEach(p => {
+const seat = document.createElement("div"); seat.className = "player-seat";
+if (gameState === "SETUP" && p.seatNumber === selectedPlayerId) seat.classList.add("selected");
+if (gameState === "PLAY") {
+if (skillActor && p.seatNumber === skillActor.seatNumber) seat.classList.add("selected");
+if (skillTarget && p.seatNumber === skillTarget.seatNumber) seat.classList.add("target-selected");
+}
+if (!p.isAlive) seat.classList.add("dead");
+
+let nameTag = p.playerName ? `<span style='font-size:9px; color:#f5c2e7; font-weight:bold;'>${p.playerName}</span>` : "";
+if (p.role) {
+if (p.role.faction === "마피아 팀" && p.isAlive) seat.classList.add("마fia-color");
+else if (p.role.faction === "시민 팀" && p.isAlive) seat.classList.add("citizen-color");
+else if (p.role.faction === "중립 팀" && p.isAlive) seat.classList.add("neutral-color");
+seat.innerHTML = `<strong>P${p.seatNumber}</strong>${nameTag}<span>${p.role.name}</span>`;
+} else {
+seat.innerHTML = `<strong>P${p.seatNumber}</strong>${nameTag}`;
+}
+
+seat.style.left = `${p.x}px`; seat.style.top = `${p.y}px`;
+seat.onclick = () => handleSeatClick(p.seatNumber);
+
+const bi = document.createElement("div"); bi.className = "btn-info"; bi.innerText = "i";
+bi.onclick = (e) => { e.stopPropagation(); openInfoModal(p); };
+
+const bm = document.createElement("div"); bm.className = "btn-move"; bm.innerText = "m";
+bm.onpointerdown = (e) => {
+if (selectedHistoryView !== "CURRENT") return; 
+e.stopPropagation(); e.preventDefault(); bm.setPointerCapture(e.pointerId);
+let sx = e.clientX, sy = e.clientY;
+bm.onpointermove = (ev) => {
+p.x += ev.clientX - sx; p.y += ev.clientY - sy;
+seat.style.left = `${p.x}px`; seat.style.top = `${p.y}px`;
+sx = ev.clientX; sy = ev.clientY; drawSkillArrows(); 
+};
+bm.onpointerup = () => { 
+bm.onpointermove = null; bm.onpointerup = null; bm.releasePointerCapture(e.pointerId); broadcastState(); 
+};
+};
+seat.appendChild(bi); seat.appendChild(bm); sl.appendChild(seat);
+});
+drawSkillArrows();
+}
+
+function drawSkillArrows() {
+const al = document.getElementById("arrow-layer"); al.innerHTML = ""; 
+let activeActionsToDraw = [];
+if (selectedHistoryView === "CURRENT") {
+if (gameState === "PLAY" && currentPhase === "NIGHT") activeActionsToDraw = nightActionLog;
+} else {
+const foundPastNight = historyLogs.find(h => h.day === selectedHistoryView);
+if (foundPastNight) activeActionsToDraw = foundPastNight.actions;
+}
+
+activeActionsToDraw.forEach((action, index) => {
+const act = action.actor, tgt = action.target;
+if (!tgt || tgt.seatNumber === 0) return; 
+
+let colorCode = "#5599ff", markerId = "arrow-citizen";
+if (act.role && act.role.faction === "마피아 팀") { colorCode = "#ff5555"; markerId = "arrow-mafia"; } 
+else if (act.role && act.role.faction === "중립 팀") { colorCode = "#50fa7b"; markerId = "arrow-neutral"; }
+
+const dx = tgt.x - act.x, dy = tgt.y - act.y;
+const distance = Math.sqrt(dx * dx + dy * dy);
+
+let x1 = act.x, y1 = act.y, x2 = tgt.x, y2 = tgt.y;
+if (distance > 64) {
+const r = 32; 
+x1 = act.x + (dx / distance) * r; y1 = act.y + (dy / distance) * r;
+x2 = tgt.x - (dx / distance) * (r + 16); y2 = tgt.y - (dy / distance) * (r + 16);
+}
+
+const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+line.setAttribute("stroke", colorCode); line.setAttribute("stroke-width", "3.5");
+line.setAttribute("stroke-dasharray", "6,6"); line.setAttribute("marker-end", `url(#${markerId})`);
+line.classList.add("skill-arrow");
+
+if (selectedHistoryView === "CURRENT") {
+line.onclick = (e) => {
+e.stopPropagation();
+customConfirm(`P${act.seatNumber}의 오더 기록을 대시보드에서 취소할까요?`, () => {
+nightActionLog.splice(index, 1); broadcastState();
+});
+};
+}
+al.appendChild(line);
+});
+
+if (gameState === "PLAY" && currentPhase === "DAY" && voteState === "SUSPECT") {
+for (const [voterSeat, targetSeat] of Object.entries(activeVotes)) {
+const act = players.find(p => p.seatNumber == voterSeat); const tgt = players.find(p => p.seatNumber == targetSeat);
+if (act && tgt) {
+const dx = tgt.x - act.x, dy = tgt.y - act.y;
+const distance = Math.sqrt(dx * dx + dy * dy);
+let x1 = act.x, y1 = act.y, x2 = tgt.x, y2 = tgt.y;
+if (distance > 64) {
+const r = 32;
+x1 = act.x + (dx / distance) * r; y1 = act.y + (dy / distance) * r;
+x2 = tgt.x - (dx / distance) * (r + 16); y2 = tgt.y - (dy / distance) * (r + 16);
+}
+const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+line.setAttribute("stroke", "#cba6f7"); line.setAttribute("stroke-width", "4.5"); line.setAttribute("marker-end", "url(#arrow-vote)");
+al.appendChild(line);
+}
+}
+}
+}
+
+function printLog() {
+if (gameState === "MAIN" || gameState === "LOBBY") return; 
+const sc = document.getElementById("status-container"); if (!sc) return;
+let html = "<strong>[사회자 실시간 명단 현황판]</strong><br><br>";
+players.forEach(p => {
+let s = p.isAlive ? "" : " (사망)", style = p.isAlive ? "" : "text-decoration: line-through; opacity: 0.6;";
+let n = p.playerName ? ` [${p.playerName}]` : "";
+let cnt = p.isContacted ? " <span style='color:#ff5555; font-size:10px;'>[접선됨]</span>" : "";
+if (p.role) {
+let c = p.role.faction === "마피아 팀" ? "#ff5555" : (p.role.faction === "중립 팀" ? "#50fa7b" : "#5599ff");
+html += `P${p.seatNumber}${n} : <span style='color:${c}; ${style}'><strong>${p.role.name}</strong>${s}${cnt}</span><br>`;
+} else {
+html += `P${p.seatNumber}${n} : <span style='color:#6c7086; ${style}'>직업 대기중${s}</span><br>`;
+}
+});
+sc.innerHTML = html;
+}
+
+function rebuildSimSelector() {
+const sel = document.getElementById("sim-id-selector"); if(sel.options.length === players.length) return;
+sel.innerHTML = "";
+players.forEach(p => {
+let opt = document.createElement("option"); opt.value = p.seatNumber;
+opt.innerText = `P${p.seatNumber} (${p.playerName || '대기'})`;
+if(p.seatNumber === simulatorPlayerId) opt.selected = true;
+sel.appendChild(opt);
+});
+}
+function changeSimulatedPlayer(val) {
+simulatorPlayerId = parseInt(val); syncSmartphoneView();
+}
+
+function toggleSmartphoneSimulator() {
+const sim = document.getElementById("smartphone-simulator");
+sim.style.display = sim.style.display === "none" ? "flex" : "none"; syncSmartphoneView();
+}
+
+function syncSmartphoneView() {
+let currentId = simulatorPlayerId;
+if (isPlayerMode) {
+const mySeat = localStorage.getItem("mySeatNumber");
+if (mySeat) currentId = parseInt(mySeat);
+else return; 
+}
+
+const p1 = players[currentId - 1]; if (!p1) return;
+document.getElementById("phone-player-name").innerText = `[나] ${p1.playerName} (P${p1.seatNumber})`;
+document.getElementById("phone-role-btn").style.display = (gameState === "PLAY" && p1.role) ? "block" : "none";
+
+const msg = document.getElementById("phone-status-msg");
+const judgePanel = document.getElementById("phone-judgment-panel"); judgePanel.style.display = "none";
+
+if (voteState === "SUSPECT") {
+msg.innerText = p1.isAlive ? "🔥 마피아로 의심되는 생존자를 선택 후 지목 투표하세요!" : "사망 상태입니다. 관전 대기하세요.";
+msg.style.color = "#f38ba8";
+} else if (voteState === "JUDGMENT") {
+if (p1.isAlive && p1 !== judgmentTarget && judgmentTarget) {
+msg.innerText = `🔥 무대 위 대상 [${judgmentTarget.playerName}] 님을 처형하시겠습니까?`;
+judgePanel.style.display = "flex";
+} else { msg.innerText = "찬반 심판 투표가 진행 중입니다."; }
+} 
+else if (gameState === "PLAY" && currentPhase === "NIGHT" && p1.isAlive && p1.role && p1.role.name === "사기꾼" && p1.isSwindlerPending) {
+if (p1.isSkillUsed) {
+msg.innerText = "🎭 이미 이번 게임에서 거짓 특종 전파 스킬을 소진 완료했습니다.";
+msg.style.color = "#6c7086";
+} else {
+msg.innerHTML = `
+                       <div style="color:#f9e2af; font-weight:bold; margin-bottom:6px;">🎭 사기꾼 전용 거짓특종 전파망</div>
+                       <div style="font-size:11px; margin-bottom:8px; color:#a6adc8;">사회자가 권한을 승인했습니다. 아래 5대 직업 중 내일 아침 뿌릴 거짓 루머 대상을 1개 선택하세요:</div>
+                       <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; width:100%;">
+                           <button class="swindler-btn" onclick="phoneSwindlerAction('경찰')">경찰</button>
+                           <button class="swindler-btn" onclick="phoneSwindlerAction('의사')">의사</button>
+                           <button class="swindler-btn" onclick="phoneSwindlerAction('탐정')">탐정</button>
+                           <button class="swindler-btn" onclick="phoneSwindlerAction('시민')">시민</button>
+                           <button class="swindler-btn" onclick="phoneSwindlerAction('기자')" style="grid-column: span 2; background-color:#f5c2e7;">기자</button>
+                       </div>
+                   `;
+}
+} else {
+msg.innerText = gameState === "PLAY" ? `[현재 ${dayCount}일차 ${currentPhase === 'DAY'?'낮':'밤'}] 사회자의 진행 신호를 대기하세요.` : "사회자의 방 개설을 대기하고 있습니다.";
+msg.style.color = "#a6adc8";
+}
+
+const list = document.getElementById("phone-player-list"); list.innerHTML = "";
+players.forEach(p => {
+if (p.playerName === "") return; 
+const item = document.createElement("div"); item.className = "phone-player-item" + (p.isAlive ? "" : " dead");
+let finalDisplayName = p.playerName, textColor = "#cdd6f4", isTargetVisibleInRedNetwork = false;
+
+if (p1.role && p1.role.faction === "마피아 팀") {
+if (p1.role.name === "마피아") {
+if (p.role && p.role.name === "마피아") isTargetVisibleInRedNetwork = true;
+if (p.role && (p.role.name === "스파이" || p.role.name === "마담" || p.role.name === "사기꾼" || p.role.name === "해커") && p.isContacted) isTargetVisibleInRedNetwork = true;
+} 
+else if (p1.isContacted) {
+if (p.role && p.role.name === "마피아") isTargetVisibleInRedNetwork = true;
+if (p.role && p.role.faction === "마피아 팀" && p.isContacted) isTargetVisibleInRedNetwork = true;
+}
+}
+
+if (isTargetVisibleInRedNetwork) {
+finalDisplayName = `P${p.seatNumber} ${p.playerName}`; textColor = "#ff5555";
+}
+
+let html = `<span style="color: ${textColor}; font-weight: ${isTargetVisibleInRedNetwork ? 'bold' : 'normal'};">${finalDisplayName} ${!p.isAlive ? '(사망)' : ''}</span>`;
+if (voteState === "SUSPECT" && p1.isAlive && p.isAlive && p !== p1) {
+const myTargetSeat = activeVotes[isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId];
+const hasVoted = myTargetSeat == p.seatNumber ? "background-color:#a6e3a1; color:#11111b" : "";
+html += `<button class="phone-vote-btn" style="display:block; ${hasVoted}" onclick="castSuspectVote(${p.seatNumber})">지목</button>`;
+}
+item.innerHTML = html; list.appendChild(item);
+});
+}
+
+function phoneSwindlerAction(chosenRole) {
+const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
+const p1 = players[mySeat - 1];
+if (!p1 || p1.role.name !== "사기꾼" || p1.isSkillUsed) return;
+
+p1.isSkillUsed = true; p1.isSwindlerPending = false; 
+logAction(`🎭 <strong>[사기꾼 거짓특종]</strong> 사기꾼 P${p1.seatNumber}가 스마트폰에서 직접 <strong>[${chosenRole}]</strong> 날조를 유포했습니다!`, "#f9e2af");
+
+customAlert(`🚨 [사기꾼 역추적 중계 알림] 🚨\n\n사기꾼 진영의 P${p1.seatNumber}번 플레이어 [${p1.playerName}] 님이 본인의 스마트폰 창에서 [ ${chosenRole} ] 직업에 대한 거짓 루머 살포 오더를 확정 전파했습니다.\n\n사회자는 다음 아침 날조 브리핑 연출 시 이 점을 반드시 메모 및 활용하세요.`);
+nightActionLog.push({ actor: p1, target: { seatNumber: 0, playerName: `거짓특종:${chosenRole}`, x: p1.x, y: p1.y } });
+broadcastState();
+}
+
+function castSuspectVote(targetSeat) {
+const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
+if (activeVotes[mySeat]) return customAlert("이미 지목권을 행사하셨습니다.");
+activeVotes[mySeat] = targetSeat; broadcastState();
+}
+
+function castJudgmentVote(decision) {
+const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
+const p1 = players[mySeat - 1]; if (!p1) return;
+if (p1.role && p1.role.name === "비리판사") judgmentVotes.judgeVote = decision;
+if (decision === "KILL") judgmentVotes.kill++; else judgmentVotes.save++;
+document.getElementById("phone-judgment-panel").style.display = "none";
+document.getElementById("phone-status-msg").innerText = "투표 완료. 사회자의 진행 신호를 기다리는 중...";
+broadcastState();
+}
+
+function showPhoneRoleInfo() {
+const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
+const p1 = players[mySeat - 1]; if (p1 && p1.role) openInfoModal(p1);
+}
+
+function openInfoModal(p) {
+if (!p.role) return customAlert("직업 정보가 배정되지 않았습니다.");
+let c = p.role.faction === "마피아 팀" ? "#ff5555" : (p.role.faction === "중립 팀" ? "#50fa7b" : "#5599ff");
+
+document.getElementById("modal-role-name").innerHTML = `
+               <div style="font-size:14px; color:#a6adc8; margin-bottom:4px; font-weight:normal;">
+                   [ 🎖️ P${p.seatNumber}번 플레이어 고유 신분 ]
+               </div>
+               <span style='color:${c}; font-size:24px; font-weight:900;'>${p.role.name}</span> 
+               <span style='font-size:14px; color:#6c7086; font-weight:normal;'>(${p.role.faction})</span>
+           `;
+document.getElementById("modal-role-desc").innerText = p.role.description;
+document.getElementById("info-modal").style.display = "flex";
+}
+function closeInfoModal() { document.getElementById("info-modal").style.display = "none"; }
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('mode') === 'player') {
+isPlayerMode = true;
+} else {
+masterInitialized = false;
+}
+updateLocalUI();
+</script>
 </body>
 </html>
