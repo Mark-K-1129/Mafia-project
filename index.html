@@ -257,8 +257,10 @@ overflow: hidden;
 .phone-player-list { display: flex; flex-direction: column; gap: 8px; }
 .phone-player-item { background-color: #1e1e2e; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #45475a; }
 .phone-player-item.dead { opacity: 0.5; text-decoration: line-through; color: #f38ba8; }
-.phone-vote-btn { background-color: #f38ba8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: none; }
-.phone-judge-btn { padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; flex: 1; }
+.phone-vote-btn { background-color: #f38ba8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: none; transition: all 0.2s; }
+.phone-vote-btn:disabled { cursor: not-allowed; }
+.phone-judge-btn { padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; flex: 1; transition: opacity 0.2s; }
+.phone-judge-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .simulator-selector-box { background-color: #181825; padding: 8px; border-radius: 6px; margin-top: 5px; display: flex; gap: 5px; align-items: center; font-size: 12px; }
 .swindler-btn { background-color: #f9e2af; color: #11111b; padding: 8px; font-size: 13px; font-weight: bold; border: 1px solid #45475a; border-radius: 6px; cursor: pointer; text-align: center; transition: background 0.2s; }
@@ -628,7 +630,7 @@ assignRole(role) { this.role = role; }
 let players = []; let joinedCount = 0; let selectedPlayerId = null; let gameState = "MAIN"; 
 let currentPhase = "DAY"; let dayCount = 1; let skillActor = null; let skillTarget = null; let nightActionLog = [];
 let voteState = "NONE"; let voteTimerInterval = null; let activeVotes = {}; 
-let judgmentVotes = { kill: 0, save: 0, judgeVote: null }; let judgmentTarget = null; let simulatorPlayerId = 1;
+let judgmentVotes = { kill: 0, save: 0, judgeVote: null }; let judgmentVoters = {}; let judgmentTarget = null; let simulatorPlayerId = 1;
 let historyLogs = []; let selectedHistoryView = "CURRENT"; 
 let isPlayerMode = false;
 let masterInitialized = false;
@@ -680,7 +682,7 @@ if (!isFirebaseConfigured) { updateLocalUI(); return; }
 roomRef.set({
 gameState: gameState, currentPhase: currentPhase, dayCount: dayCount, voteState: voteState,
 joinedCount: joinedCount, selectedPlayerId: selectedPlayerId || null, activeVotes: activeVotes || {},
-judgmentVotes: judgmentVotes || { kill: 0, save: 0, judgeVote: null },
+judgmentVotes: judgmentVotes || { kill: 0, save: 0, judgeVote: null }, judgmentVoters: judgmentVoters || {},
 judgmentTargetSeat: judgmentTarget ? judgmentTarget.seatNumber : null, nightActionLog: nightActionLog || [],
 selectedHistoryView: selectedHistoryView, historyLogs: historyLogs || [],
 players: players.map(p => ({
@@ -705,6 +707,7 @@ return;
 gameState = data.gameState || "MAIN"; currentPhase = data.currentPhase || "DAY"; dayCount = data.dayCount || 1;
 voteState = data.voteState || "NONE"; joinedCount = data.joinedCount || 0; selectedPlayerId = data.selectedPlayerId || null;
 activeVotes = data.activeVotes || {}; judgmentVotes = data.judgmentVotes || { kill: 0, save: 0, judgeVote: null };
+judgmentVoters = data.judgmentVoters || {};
 nightActionLog = data.nightActionLog || [];
 selectedHistoryView = data.selectedHistoryView || "CURRENT";
 historyLogs = data.historyLogs || [];
@@ -823,7 +826,7 @@ syncSmartphoneView();
 
 function enterSetup() {
 gameState = "LOBBY"; players = []; joinedCount = 0; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; activeVotes = {};
-judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null; nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT";
+judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentVoters = {}; judgmentTarget = null; nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT";
 document.getElementById("status-container").innerHTML = "초기 게임 인원을 설정하고 QR 대기실을 생성하세요.";
 broadcastState();
 }
@@ -859,7 +862,7 @@ broadcastState();
 function triggerAbsoluteReset() {
 customConfirm("🚨 [서버 전체 초기화 경고]\n\n모든 플레이어 정보와 연결 기록을 삭제하고 메인 화면으로 되돌리겠습니까?", () => {
 gameState = "MAIN"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; joinedCount = 0; selectedPlayerId = null;
-players = []; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentTarget = null;
+players = []; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentVoters = {}; judgmentTarget = null;
 nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; skillActor = null; skillTarget = null;
 
 // UI 요소 전체 소거
@@ -875,7 +878,7 @@ document.getElementById("swindler-master-zone").style.display = "none";
 if (isFirebaseConfigured) {
 roomRef.set({
 gameState: "MAIN", currentPhase: "DAY", dayCount: 1, voteState: "NONE", joinedCount: 0,
-selectedPlayerId: null, activeVotes: {}, judgmentVotes: { kill: 0, save: 0, judgeVote: null },
+selectedPlayerId: null, activeVotes: {}, judgmentVotes: { kill: 0, save: 0, judgeVote: null }, judgmentVoters: {},
 judgmentTargetSeat: null, nightActionLog: [], selectedHistoryView: "CURRENT", historyLogs: [], players: []
 });
 }
@@ -915,7 +918,7 @@ broadcastState();
 function triggerGameReset() {
 customConfirm("💥 정말 현재 설정된 배치를 초기화하고 직업 할당 단계(Setup)로만 한 단계 리셋하시겠습니까?", () => {
 gameState = "SETUP"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; skillActor = null; skillTarget = null;
-nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; judgmentTarget = null;
+nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; judgmentTarget = null; activeVotes = {}; judgmentVoters = {};
 
 players.forEach(p => {
 p.isAlive = true; p.isContacted = false; p.isSkillUsed = false; p.isSwindlerPending = false; p.isThreatened = false;
@@ -1071,7 +1074,8 @@ broadcastState();
 }
 
 function startVotePhase(type) {
-if (voteState !== "NONE") return; voteState = type; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null };
+if (voteState !== "NONE") return; 
+voteState = type; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentVoters = {};
 document.getElementById("timer-display").style.display = "block";
 document.getElementById("btn-vote-1").disabled = true; document.getElementById("btn-vote-2").disabled = true;
 
@@ -1088,7 +1092,7 @@ function endVotePhase() {
 clearInterval(voteTimerInterval); document.getElementById("timer-display").style.display = "none";
 if (voteState === "SUSPECT") calculateSuspectVotes();
 else if (voteState === "JUDGMENT") calculateJudgmentVotes();
-voteState = "NONE"; activeVotes = {};
+voteState = "NONE"; activeVotes = {}; judgmentVoters = {};
 document.getElementById("btn-vote-1").disabled = false; document.getElementById("arrow-layer").innerHTML = ""; 
 broadcastState();
 }
@@ -1465,12 +1469,18 @@ document.getElementById("phone-role-btn").style.display = (gameState === "PLAY" 
 const msg = document.getElementById("phone-status-msg");
 const judgePanel = document.getElementById("phone-judgment-panel"); judgePanel.style.display = "none";
 
+const myVote = activeVotes[currentId];
+const myJudgment = judgmentVoters[currentId];
+
 if (voteState === "SUSPECT") {
 if (!p1.isAlive) {
 msg.innerText = "사망 상태입니다. 관전 대기하세요.";
 } else if (p1.isThreatened) {
 msg.innerText = "👊 건달에게 협박당하여 오늘 투표에 참여할 수 없습니다.";
 msg.style.color = "#f38ba8";
+} else if (myVote) {
+msg.innerText = `🔥 1차 지목 투표 완료! (P${myVote}번 지목함)\n다른 플레이어의 투표 종료를 기다리는 중...`;
+msg.style.color = "#a6e3a1";
 } else {
 msg.innerText = "🔥 마피아로 의심되는 생존자를 선택 후 지목 투표하세요!";
 msg.style.color = "#f38ba8";
@@ -1481,11 +1491,16 @@ msg.innerText = "사망 상태입니다. 관전 대기하세요.";
 } else if (p1.isThreatened) {
 msg.innerText = "👊 건달에게 협박당하여 찬반 투표에 참여할 수 없습니다.";
 msg.style.color = "#f38ba8";
+} else if (myJudgment) {
+msg.innerText = `⚖️ 찬반 투표 완료 ([${myJudgment === 'SAVE' ? '살린다(찬성)' : '죽인다(반대)'}] 선택됨).\n최종 판결 집행을 대기 중...`;
+msg.style.color = "#a6e3a1";
+judgePanel.style.display = "none";
 } else if (p1 !== judgmentTarget && judgmentTarget) {
 msg.innerText = `🔥 무대 위 대상 [${judgmentTarget.playerName}] 님을 처형하시겠습니까?`;
 judgePanel.style.display = "flex";
 } else { 
 msg.innerText = "찬반 심판 투표가 진행 중입니다."; 
+judgePanel.style.display = "none";
 }
 } 
 else if (gameState === "PLAY" && currentPhase === "NIGHT" && p1.isAlive && p1.role && p1.role.name === "사기꾼" && p1.isSwindlerPending) {
@@ -1533,9 +1548,14 @@ finalDisplayName = `P${p.seatNumber} ${p.playerName}`; textColor = "#ff5555";
 
 let html = `<span style="color: ${textColor}; font-weight: ${isTargetVisibleInRedNetwork ? 'bold' : 'normal'};">${finalDisplayName} ${!p.isAlive ? '(사망)' : ''}</span>`;
 if (voteState === "SUSPECT" && p1.isAlive && !p1.isThreatened && p.isAlive && p !== p1) {
-const myTargetSeat = activeVotes[isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId];
-const hasVoted = myTargetSeat == p.seatNumber ? "background-color:#a6e3a1; color:#11111b" : "";
-html += `<button class="phone-vote-btn" style="display:block; ${hasVoted}" onclick="castSuspectVote(${p.seatNumber})">지목</button>`;
+if (myVote) {
+const isMyTarget = myVote == p.seatNumber;
+const btnStyle = isMyTarget ? "background-color:#a6e3a1; color:#11111b; opacity:1;" : "background-color:#45475a; color:#6c7086; opacity:0.4;";
+const label = isMyTarget ? "지목됨" : "지목 불가";
+html += `<button class="phone-vote-btn" style="display:block; ${btnStyle}" disabled>${label}</button>`;
+} else {
+html += `<button class="phone-vote-btn" style="display:block;" onclick="castSuspectVote(${p.seatNumber})">지목</button>`;
+}
 }
 item.innerHTML = html; list.appendChild(item);
 });
@@ -1557,19 +1577,27 @@ broadcastState();
 function castSuspectVote(targetSeat) {
 const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
 const p1 = players[mySeat - 1];
-if (p1 && p1.isThreatened) return customAlert("건달에게 협박당하여 오늘 투표권이 상실되었습니다.");
-if (activeVotes[mySeat]) return customAlert("이미 지목권을 행사하셨습니다.");
-activeVotes[mySeat] = targetSeat; broadcastState();
+if (!p1) return;
+if (p1.isThreatened) return customAlert("건달에게 협박당하여 오늘 투표권이 상실되었습니다.");
+if (activeVotes[mySeat]) return; // 이미 투표한 경우 다중 클릭 철저히 방지
+
+activeVotes[mySeat] = targetSeat; 
+syncSmartphoneView(); // 화면 즉시 잠금
+broadcastState();
 }
 
 function castJudgmentVote(decision) {
 const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
 const p1 = players[mySeat - 1]; if (!p1) return;
 if (p1.isThreatened) return customAlert("건달에게 협박당하여 오늘 투표권이 상실되었습니다.");
+if (judgmentVoters[mySeat]) return; // 이미 투표한 경우 중복 표결 철저히 방지
+
+judgmentVoters[mySeat] = decision;
 if (p1.role && p1.role.name === "비리판사") judgmentVotes.judgeVote = decision;
 if (decision === "KILL") judgmentVotes.kill++; else judgmentVotes.save++;
+
 document.getElementById("phone-judgment-panel").style.display = "none";
-document.getElementById("phone-status-msg").innerText = "투표 완료. 사회자의 진행 신호를 기다리는 중...";
+syncSmartphoneView(); // 화면 즉시 잠금
 broadcastState();
 }
 
