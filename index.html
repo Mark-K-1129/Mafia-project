@@ -1097,12 +1097,12 @@ document.getElementById("btn-vote-1").disabled = false; document.getElementById(
 broadcastState();
 }
 
+// 🛠️ 1차 지목 투표에만 국회의원 다수표 가중치(2~3표) 적용
 function calculateSuspectVotes() {
 let tally = {}; players.forEach(p => tally[p.seatNumber] = 0);
 for (const [voterSeat, targetSeat] of Object.entries(activeVotes)) {
 const voter = players.find(p => p.seatNumber == voterSeat);
 if (voter) {
-// 국회의원 로직 변경: 15명 미만 2표 / 15명 이상 3표
 let weight = 1;
 if (voter.role && voter.role.name === "국회의원") {
 weight = players.length < 15 ? 2 : 3;
@@ -1131,20 +1131,40 @@ customAlert(`[마스터 가이드 브리핑 멘트]\n\n"P${judgmentTarget.seatNu
 }
 }
 
+// 🛠️ 국회의원 사형 면책 로직 및 테러리스트 처형 알림 유지
 function calculateJudgmentVotes() {
 if (!judgmentTarget) return;
 let result = "";
+let willDie = false;
+
 if (judgmentVotes.judgeVote === "KILL") {
-result = "사형 (비리판사의 절대 권한 발동)"; judgmentTarget.isAlive = false;
+result = "사형 (비리판사의 절대 권한 발동)"; 
+willDie = true;
 } else if (judgmentVotes.judgeVote === "SAVE") {
 result = "방면 (비리판사의 절대 권한 발동)";
 } else {
 if (judgmentVotes.kill > judgmentVotes.save) {
-result = "최종 처형 사형"; judgmentTarget.isAlive = false;
+result = "최종 처형 사형"; 
+willDie = true;
 } else {
 result = "최종 생존 방면 (동률 부결 또는 찬성 부족)";
 }
 }
+
+// 국회의원 고유 능력: 투표 사형 시 공권력 및 면책 발동으로 생존 처리
+if (willDie && judgmentTarget.role && judgmentTarget.role.name === "국회의원") {
+willDie = false;
+result += " ➔ [공권력 발동: 국회의원 면책 특권으로 사형 면제 생존!]";
+logAction(`🏛️ <strong>[국회의원 공권력 발동]</strong> P${judgmentTarget.seatNumber}[${judgmentTarget.playerName}]님이 처형 위기에 처했으나, 면책 특권으로 죽지 않고 생존합니다!`, "#a6e3a1");
+}
+
+if (willDie) {
+judgmentTarget.isAlive = false;
+if (judgmentTarget.role && judgmentTarget.role.name === "테러리스트") {
+logAction(`💣 <strong>[테러리스트 자폭 경고]</strong> P${judgmentTarget.seatNumber}번이 처형되었습니다! 밤에 지정했던 자폭 대상자를 확인하여 동반 사망 처리해 주세요.`, "#ff5555");
+}
+}
+
 logAction(`⚖️ <strong>2차 심판 결과:</strong> P${judgmentTarget.seatNumber}[${judgmentTarget.playerName}] ➔ ${result} (찬성:${judgmentVotes.kill} / 반대:${judgmentVotes.save})`, "#f38ba8");
 judgmentTarget = null;
 }
@@ -1155,7 +1175,7 @@ currentPhase = "NIGHT";
 selectedHistoryView = "CURRENT"; 
 } 
 else { 
-players.forEach(p => p.isThreatened = false); // 어제 협박 상태 초기화
+players.forEach(p => p.isThreatened = false); 
 
 const compressedActions = nightActionLog.map(act => ({
 actor: { seatNumber: act.actor.seatNumber, playerName: act.actor.playerName, x: act.actor.x, y: act.actor.y, role: act.actor.role ? { name: act.actor.role.name, faction: act.actor.role.faction } : null },
@@ -1164,7 +1184,6 @@ target: { seatNumber: act.target.seatNumber, playerName: act.target.playerName, 
 
 historyLogs.push({ day: dayCount, actions: compressedActions });
 
-// 도플갱어 및 건달 로직 일괄 처리
 nightActionLog.forEach(action => {
 const actorPlayer = players.find(p => p.seatNumber === action.actor.seatNumber);
 const targetPlayer = players.find(p => p.seatNumber === action.target.seatNumber);
@@ -1579,25 +1598,28 @@ const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPl
 const p1 = players[mySeat - 1];
 if (!p1) return;
 if (p1.isThreatened) return customAlert("건달에게 협박당하여 오늘 투표권이 상실되었습니다.");
-if (activeVotes[mySeat]) return; // 이미 투표한 경우 다중 클릭 철저히 방지
+if (activeVotes[mySeat]) return; 
 
 activeVotes[mySeat] = targetSeat; 
-syncSmartphoneView(); // 화면 즉시 잠금
+syncSmartphoneView(); 
 broadcastState();
 }
 
+// 🛠️ 2차 찬반 심판 투표 시에는 누구나 정직하게 1표씩만 집계되도록 원상 복구
 function castJudgmentVote(decision) {
 const mySeat = isPlayerMode ? localStorage.getItem("mySeatNumber") : simulatorPlayerId;
 const p1 = players[mySeat - 1]; if (!p1) return;
 if (p1.isThreatened) return customAlert("건달에게 협박당하여 오늘 투표권이 상실되었습니다.");
-if (judgmentVoters[mySeat]) return; // 이미 투표한 경우 중복 표결 철저히 방지
+if (judgmentVoters[mySeat]) return; 
 
 judgmentVoters[mySeat] = decision;
 if (p1.role && p1.role.name === "비리판사") judgmentVotes.judgeVote = decision;
-if (decision === "KILL") judgmentVotes.kill++; else judgmentVotes.save++;
+
+if (decision === "KILL") judgmentVotes.kill += 1; 
+else judgmentVotes.save += 1;
 
 document.getElementById("phone-judgment-panel").style.display = "none";
-syncSmartphoneView(); // 화면 즉시 잠금
+syncSmartphoneView(); 
 broadcastState();
 }
 
