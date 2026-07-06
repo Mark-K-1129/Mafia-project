@@ -8,6 +8,30 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
+<script>
+// 🚀 [추가 기능 3] QR코드 스캔 시 인앱 브라우저(카카오톡, 네이버, 인스타그램 등) 감지 및 크롬 강제 이동
+function forceExternalBrowser() {
+    var userAgent = navigator.userAgent.toLowerCase();
+    var targetUrl = location.href;
+    
+    // 대표적인 인앱 브라우저 감지
+    if (userAgent.match(/kakaotalk|naver|line|inapp|instagram|fb_iab|fbav|daum/i)) {
+        if (userAgent.match(/android/i)) {
+            // 안드로이드: 크롬 브라우저 강제 실행 인텐트 호출
+            var intentUrl = "intent://" + targetUrl.replace(/https?:\/\//i, '') + "#Intent;scheme=https;package=com.android.chrome;end";
+            if (targetUrl.indexOf("http://") === 0) {
+                intentUrl = "intent://" + targetUrl.replace(/http:\/\//i, '') + "#Intent;scheme=http;package=com.android.chrome;end";
+            }
+            location.href = intentUrl;
+        } else if (userAgent.match(/iphone|ipad|ipod/i)) {
+            // iOS: 애플 정책상 JS로 타 앱 강제 실행 불가하므로 명확한 안내 팝업 표출
+            alert("⚠️ 인앱 브라우저(카카오톡/네이버 등)에서는 실시간 동기화 오류가 발생할 수 있습니다.\n\n우측 하단 또는 상단의 [···] 메뉴 버튼을 눌러 'Safari에서 열기' 또는 '다른 브라우저에서 열기'를 눌러주세요!");
+        }
+    }
+}
+forceExternalBrowser();
+</script>
+
 <style>
 body {
 font-family: 'Malgun Gothic', sans-serif;
@@ -209,6 +233,7 @@ button:hover { opacity: 0.8; }
 button:disabled { background-color: #45475a; color: #6c7086; cursor: not-allowed; }
 
 .btn-complete { background-color: #a6e3a1; color: #11111b; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
+.btn-shuffle { background-color: #cba6f7; color: #11111b; width: 100%; margin-top: 10px; font-size: 15px; padding: 12px; }
 .btn-night-action { background-color: #f9e2af; color: #11111b; width: 100%; padding: 12px; font-size: 15px; }
 .btn-phase-toggle { background-color: #f38ba8; color: #11111b; width: 100%; font-size: 15px; padding: 12px; margin-top: 10px; }
 
@@ -366,6 +391,7 @@ overflow: hidden;
 </div>
 
 <div id="role-picker-panel" style="display: none;">
+<button class="btn-shuffle" onclick="shufflePlayerSeats()">🎲 접속 플레이어 좌석 번호 랜덤 섞기</button>
 <div id="selected-player-text" class="selected-info">지정할 플레이어를 클릭하세요.</div>
 <div class="faction-section">
 <div class="faction-title" style="color: #ff5555;">■ 마피아 팀</div>
@@ -698,6 +724,19 @@ updateLocalUI();
 if (isFirebaseConfigured) {
 roomRef.on('value', (snapshot) => {
 const data = snapshot.val(); 
+
+// 🚀 [추가 기능 1 완벽 반영] 플레이어 화면 접속 시 서버 상태가 MAIN이거나 데이터가 없으면 캐시 완벽 삭제
+if (isPlayerMode) {
+    if (!data || data.gameState === "MAIN" || !data.players || data.players.length === 0) {
+        localStorage.removeItem("mySeatNumber");
+    } else {
+        const mySeat = localStorage.getItem("mySeatNumber");
+        if (mySeat && data.players[mySeat - 1] && data.players[mySeat - 1].playerName === "") {
+            localStorage.removeItem("mySeatNumber");
+        }
+    }
+}
+
 if (!data) {
 if(!isPlayerMode && masterInitialized) gameState = "MAIN";
 updateLocalUI();
@@ -859,11 +898,14 @@ document.getElementById("status-container").innerHTML = "초기 게임 인원을
 broadcastState();
 }
 
+// 🚀 [추가 기능 1 완벽 반영] 서버 전체 초기화 시 로컬 스토리지까지 소거 처리
 function triggerAbsoluteReset() {
-customConfirm("🚨 [서버 전체 초기화 경고]\n\n모든 플레이어 정보와 연결 기록을 삭제하고 메인 화면으로 되돌리겠습니까?", () => {
+customConfirm("🚨 [서버 전체 초기화 경고]\n\n모든 플레이어 정보와 연결 기록을 삭제하고 메인 화면으로 되돌리겠습니까?\n(참가자 모바일에 캐시된 기록도 전부 초기화되며 새로 접속해야 합니다.)", () => {
 gameState = "MAIN"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; joinedCount = 0; selectedPlayerId = null;
 players = []; activeVotes = {}; judgmentVotes = { kill: 0, save: 0, judgeVote: null }; judgmentVoters = {}; judgmentTarget = null;
 nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; skillActor = null; skillTarget = null;
+
+localStorage.removeItem("mySeatNumber");
 
 // UI 요소 전체 소거
 const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
@@ -913,6 +955,23 @@ function finishLobby() {
 gameState = "SETUP"; buildRolePickerButtons();
 document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
 broadcastState();
+}
+
+// 🚀 [추가 기능 2 완벽 반영] 직업 배정 전 플레이어들의 좌석 번호 랜덤 섞기
+function shufflePlayerSeats() {
+customConfirm("🎲 현재 접속한 플레이어들의 좌석 번호를 랜덤으로 완전히 재배치하시겠습니까?\n(참가자들의 스마트폰 모바일 화면에도 바뀐 좌석 번호가 실시간 반영됩니다.)", () => {
+    let activeNames = players.map(p => p.playerName);
+    for (let i = activeNames.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [activeNames[i], activeNames[j]] = [activeNames[j], activeNames[i]];
+    }
+    players.forEach((p, idx) => {
+        p.playerName = activeNames[idx];
+    });
+    renderSeats();
+    broadcastState();
+    customAlert("🎲 플레이어들의 좌석 번호가 랜덤으로 재배치되었습니다!");
+});
 }
 
 function triggerGameReset() {
