@@ -9,22 +9,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
 <script>
-// 🚀 [추가 기능 3] QR코드 스캔 시 인앱 브라우저(카카오톡, 네이버, 인스타그램 등) 감지 및 크롬 강제 이동
+// 🚀 QR코드 스캔 시 인앱 브라우저(카카오톡, 네이버, 인스타그램 등) 감지 및 크롬 강제 이동
 function forceExternalBrowser() {
     var userAgent = navigator.userAgent.toLowerCase();
     var targetUrl = location.href;
     
-    // 대표적인 인앱 브라우저 감지
     if (userAgent.match(/kakaotalk|naver|line|inapp|instagram|fb_iab|fbav|daum/i)) {
         if (userAgent.match(/android/i)) {
-            // 안드로이드: 크롬 브라우저 강제 실행 인텐트 호출
             var intentUrl = "intent://" + targetUrl.replace(/https?:\/\//i, '') + "#Intent;scheme=https;package=com.android.chrome;end";
             if (targetUrl.indexOf("http://") === 0) {
                 intentUrl = "intent://" + targetUrl.replace(/http:\/\//i, '') + "#Intent;scheme=http;package=com.android.chrome;end";
             }
             location.href = intentUrl;
         } else if (userAgent.match(/iphone|ipad|ipod/i)) {
-            // iOS: 애플 정책상 JS로 타 앱 강제 실행 불가하므로 명확한 안내 팝업 표출
             alert("⚠️ 인앱 브라우저(카카오톡/네이버 등)에서는 실시간 동기화 오류가 발생할 수 있습니다.\n\n우측 하단 또는 상단의 [···] 메뉴 버튼을 눌러 'Safari에서 열기' 또는 '다른 브라우저에서 열기'를 눌러주세요!");
         }
     }
@@ -181,7 +178,7 @@ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
 color: #6c7086; font-weight: bold; font-size: 18px; text-align: center; line-height: 1.4; pointer-events: none; z-index: 1;
 }
 
-#arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+#arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
 .skill-arrow { pointer-events: auto; cursor: pointer; transition: stroke-width 0.2s; }
 .skill-arrow:hover { stroke-width: 6; filter: drop-shadow(0 0 6px #ffffff); }
 
@@ -645,11 +642,10 @@ this.name = name; this.faction = faction; this.skillName = skillName; this.descr
 }
 }
 
-// 🚀 [수정 사항] 플레이어 슬롯 고유 ID(id)와 화면 표시용 랜덤 번호(seatNumber)를 분리 관리
 class Player {
 constructor(id) {
-this.id = id;               // 방 접속 시 할당되는 영구적인 고유 슬롯 번호 (1, 2, 3...)
-this.seatNumber = id;       // 화면 및 표결에 표시되는 플레이어 고유 번호 (P1, P2... 셔플 대상!)
+this.id = id;               
+this.seatNumber = id;       
 this.playerName = ""; 
 this.role = null; 
 this.isAlive = true; 
@@ -671,7 +667,6 @@ let historyLogs = []; let selectedHistoryView = "CURRENT";
 let isPlayerMode = false;
 let masterInitialized = false;
 
-// 🔒 [보안 함수] 단방향 해시 스트링 반환 (SHA-256)
 async function calculateSHA256(string) {
 const msgBuffer = new TextEncoder().encode(string);
 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -679,7 +674,6 @@ const hashArray = Array.from(new Uint8Array(hashBuffer));
 return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// 🔒 [보안 함수] 패스워드 검증 처리
 async function checkMasterAuth() {
 const inputVal = document.getElementById("master-password-input").value;
 const inputHash = await calculateSHA256(inputVal);
@@ -709,7 +703,6 @@ return customAlert("❌ 이미 게임 정원이 가득 찬 방입니다.");
 firstEmptySlot.playerName = nickname;
 joinedCount = players.filter(p => p.playerName !== "").length;
 
-// 영구 접속 슬롯 ID와 기본 번호 둘 다 저장하여 안전하게 인식
 localStorage.setItem("myPlayerId", firstEmptySlot.id);
 localStorage.setItem("mySeatNumber", firstEmptySlot.seatNumber);
 broadcastState();
@@ -738,7 +731,6 @@ if (isFirebaseConfigured) {
 roomRef.on('value', (snapshot) => {
 const data = snapshot.val(); 
 
-// 🚀 플레이어 화면 접속 시 서버 상태가 MAIN이거나 데이터가 없으면 캐시 완벽 삭제
 if (isPlayerMode) {
     if (!data || data.gameState === "MAIN" || !data.players || data.players.length === 0) {
         localStorage.removeItem("mySeatNumber");
@@ -832,7 +824,6 @@ document.getElementById("player-join-btn").style.display = "block";
 return;
 }
 
-// === [안전한 디스플레이 관리 (중첩/가려짐 현상 차단)] ===
 if (!masterInitialized) {
 document.getElementById("master-lock-screen").style.display = "flex";
 document.getElementById("main-screen").style.display = "none";
@@ -842,7 +833,7 @@ return;
 }
 
 document.getElementById("master-lock-screen").style.display = "none";
-document.getElementById("player-join-screen").style.display = "none"; // 모바일 가입창 무조건 숨김
+document.getElementById("player-join-screen").style.display = "none"; 
 
 if (gameState === "MAIN") {
 document.getElementById("main-screen").style.display = "flex";
@@ -872,6 +863,7 @@ document.getElementById("lobby-panel").style.display = "none";
 document.getElementById("role-picker-panel").style.display = "block";
 document.getElementById("play-dashboard-panel").style.display = "none";
 document.getElementById("master-timeline-box").style.display = "none";
+buildRolePickerButtons(); 
 renderSeats();
 } 
 else if (gameState === "PLAY") {
@@ -882,6 +874,7 @@ document.getElementById("play-dashboard-panel").style.display = "block";
 document.getElementById("master-timeline-box").style.display = "flex";
 renderSeats(); printLog();
 rebuildSimSelector();
+renderTimelineButtons(); 
 }
 syncSmartphoneView();
 }
@@ -930,7 +923,6 @@ nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; skillAct
 localStorage.removeItem("mySeatNumber");
 localStorage.removeItem("myPlayerId");
 
-// UI 요소 전체 소거
 const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
 document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>우측에서 설정을 진행하세요</span>";
 document.getElementById("arrow-layer").innerHTML = "";
@@ -980,16 +972,13 @@ document.getElementById("center-display").innerHTML = "원형 테이블<br><span
 broadcastState();
 }
 
-// 🚀 [요청 반영 1 & 2 완벽 구현] 이름 순서는 그대로 유지하고 플레이어 번호(seatNumber)만 랜덤 섞기
 function shufflePlayerNumbers() {
 customConfirm("🎲 접속한 플레이어들의 고유 번호(P#)를 랜덤으로 완전히 재배치하시겠습니까?\n(참가자들의 스마트폰 화면에는 이름 목록 순서가 그대로 유지된 채 본인에게 배정된 새로운 번호만 변경되어 표시됩니다.)", () => {
-    // 기존에 할당되어 있던 번호들을 수집 후 랜덤 섞기
     let numbers = players.map(p => p.seatNumber);
     for (let i = numbers.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
     }
-    // 접속한 배열 순서(이름)는 그대로 두고 섞인 번호만 새롭게 부여
     players.forEach((p, idx) => {
         p.seatNumber = numbers[idx];
     });
@@ -1010,12 +999,14 @@ function triggerGameReset() {
 customConfirm("💥 정말 현재 설정된 배치를 초기화하고 직업 할당 단계(Setup)로만 한 단계 리셋하시겠습니까?", () => {
 gameState = "SETUP"; currentPhase = "DAY"; dayCount = 1; voteState = "NONE"; skillActor = null; skillTarget = null;
 nightActionLog = []; historyLogs = []; selectedHistoryView = "CURRENT"; judgmentTarget = null; activeVotes = {}; judgmentVoters = {};
+selectedPlayerId = null;
 
 players.forEach(p => {
 p.isAlive = true; p.isContacted = false; p.isSkillUsed = false; p.isSwindlerPending = false; p.isThreatened = false;
 });
 
 document.getElementById("center-display").innerHTML = "원형 테이블<br><span style='font-size:13px; font-weight:normal;'>좌석 지정 후 우측 직업 버튼을 배정하세요</span>";
+document.getElementById("selected-player-text").innerText = "지정할 플레이어를 클릭하세요.";
 const alc = document.getElementById("action-log-list"); if (alc) alc.innerHTML = "";
 logAction("🔄 사회자가 판을 파기하고 [직업 재설정] 단계로 되돌렸습니다.", "#f38ba8");
 broadcastState();
@@ -1024,9 +1015,13 @@ broadcastState();
 
 function buildRolePickerButtons() {
 const mapping = { "마피아 팀": "mafia-btns", "시민 팀": "citizen-btns", "중립 팀": "neutral-btns" };
-for (let id of Object.values(mapping)) document.getElementById(id).innerHTML = "";
+for (let id of Object.values(mapping)) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+}
 for (const [faction, roles] of Object.entries(availableRoles)) {
 const container = document.getElementById(mapping[faction]);
+if (!container) continue;
 roles.forEach(roleName => {
 const btn = document.createElement("button"); btn.className = "role-btn"; btn.innerText = roleName;
 btn.onclick = () => assignRoleToSelected(roleName, faction); container.appendChild(btn);
@@ -1646,7 +1641,6 @@ if (p.playerName === "") return;
 const item = document.createElement("div"); item.className = "phone-player-item" + (p.isAlive ? "" : " dead");
 let finalDisplayName = p.playerName, textColor = "#cdd6f4", isTargetVisibleInRedNetwork = false;
 
-// 🕵️‍♂️ 마피아 및 접선 네트워크 관리 로직
 if (p1.role && p1.role.faction === "마피아 팀") {
     if (p1.role.name === "마피아") {
         if (p.role && p.role.name === "마피아") isTargetVisibleInRedNetwork = true;
@@ -1658,16 +1652,12 @@ if (p1.role && p1.role.faction === "마피아 팀") {
     }
 }
 
-// 🚀 [핵심 수정] 참가자 번호(P#) 보안 은닉 연출 처리
 if (p === p1) {
-    // 1. 자기 자신인 경우는 번호와 이름 상시 노출
     finalDisplayName = `P${p.seatNumber} ${p.playerName} (나)`;
 } else if (isTargetVisibleInRedNetwork) {
-    // 2. 마피아끼리 혹은 접선된 마피아 팀원인 경우 번호와 이름 공유 및 적색 강조
     finalDisplayName = `P${p.seatNumber} ${p.playerName}`; 
     textColor = "#ff5555";
 } else {
-    // 3. 일반 시민 및 접선되지 않은 타인은 철저하게 '이름'만 노출 (추리 미궁 유도)
     finalDisplayName = p.playerName;
 }
 
